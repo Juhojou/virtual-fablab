@@ -15,7 +15,7 @@ The installation process is as easy as copying both folders within the Arduino I
 # 3. Download and install Blender
 https://www.blender.org/download/
 
-# 4. Open Blender nad go to Scripting view
+# 4. Open Blender and go to Scripting view
 
 # 5. Fork/download our codes and open the python file in Blender
 
