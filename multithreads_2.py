@@ -54,7 +54,8 @@ def addBuffer1():
         ctr = 0
         tempA = 0
         defA, defB, defC = None, None, None
-        while quit == 0:
+        s = threading.currentThread()
+        while getattr(s,"do_run", True):
             try:
                 line = ser.readline()
                 line = line.decode('utf-8')
@@ -67,10 +68,12 @@ def addBuffer1():
                     b = float(line[2])
                     c = float(line[3])
                     if ctr < 5:
+                        print("aasi")
                         if (a == tempA):
                             ctr += 1
                             print(ctr)
                         else:
+                            #print("else ctr")
                             ctr = 0
                         tempA = a
                         if ctr == 5:
@@ -78,12 +81,12 @@ def addBuffer1():
                             ctr = 6
                             print("YAW alustettu")
                     if defA:
-                        if a > defA + 60 or a < defA - 60 or b > defB + 60 or b < defB - 60 or c > defC + 60 or c < defC - 60:
-                            print(line)
+                        if a > defA + 30 or a < defA - 30 or b > defB + 30 or b < defB - 30 or c > defC + 30 or c < defC - 30:
+                            #print(line)
                             q.put(line)
                 #print(line)
                 #q.put(line)
-                        qlock.release()
+                    qlock.release()
             except UnicodeError:
                 print("unicode error")
                 continue
@@ -93,7 +96,7 @@ def addBuffer1():
             except KeyboardInterrupt:
                 print("KeyboardInterrupt!!!!")
                 #threading.Thread.exit()
-                ser.close()
+                #ser.close()
                 quit = 1
             #finally:
             #    ser.close()
@@ -101,7 +104,7 @@ def addBuffer1():
         #closeSerial()
         #ser.close()
         print("Serial error!!")
-        
+    #ser.close()
         
 
 class ModalTimerOperator(bpy.types.Operator):
@@ -142,36 +145,37 @@ class ModalTimerOperator(bpy.types.Operator):
             #bpy.ops.transform.rotate(value=roll*0.0174533, axis=(0,1,0))
             pi = 3.14159265358979
             qlock.release()
-            obj.rotation_euler = (b , c , a)
-            """
-            if a > self._defA + 60:
+            #obj.rotation_euler = (b , c , a)
+            
+            
+            if a > obj.rotation_euler.z + 30:
      #           rotation.append("+a")
                 obj.rotation_euler.z -= pi/16
                 #pass
                            
-            if a < self._defA - 60:
+            if a < obj.rotation_euler.z - 30:
     #            rotation.append("-a")       
                 obj.rotation_euler.z += pi/16
                 #pass
                     
-            if b > self._defB + 60:
+            if b > obj.rotation_euler.x + 30:
                 #rotation.append("+b") 
                 obj.rotation_euler.x += pi/16
                 #pass     
-            if b < self._defB - 60:
+            if b < obj.rotation_euler.x - 30:
                 #rotation.append("-b")
                 obj.rotation_euler.x -= pi/16
                 #pass
                     
-            if c > self._defC + 60:
+            if c > obj.rotation_euler.y + 30:
                 #rotation.append("+c") 
                 obj.rotation_euler.y += pi/16     
                 #pass
-            if c < self._defC - 60:
+            if c < obj.rotation_euler.y - 30:
                 #rotation.append("-c")
                 obj.rotation_euler.y -= pi/16
                 #pass
-            """
+            
             #time.sleep(0.1)
         #bpy.ops.transform.rotate(value=0.283/8, axis=(0,0,1))
         #except KeyboardInterrupt:
@@ -182,6 +186,8 @@ class ModalTimerOperator(bpy.types.Operator):
             self.limits = 0
             self.cancel(context)
             print("done")
+            p.do_run = False
+            p.join()
             quit = 1
             return {'FINISHED'}
 
