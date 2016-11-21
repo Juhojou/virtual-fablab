@@ -21,6 +21,6 @@ We build a Power Glove which uses Arduino Uno, MPU6050 accelerometer, two bendin
 
   https://github.com/pyserial/pyserial
 
-6. Fork/download our codes and open the python file in Blender Scripting view
+5. Fork/download our codes and open the python file in Blender Scripting view
 
-7. Use the system and please feel free to edit the code!
+6. Use the system and please feel free to edit the code!
