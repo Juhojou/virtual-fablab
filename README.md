@@ -1,13 +1,13 @@
 # virtual-fablab
 The purpose of this project is to make an open-source 3D-virtualization tool.
-User can control and edit a 3D-object with a power glove in 3D-computer graphic software called Blender.
+User can control and edit a 3D-object with e.g. power glove in 3D-computer graphic software called Blender.
 
-Our Power Glove uses Arduino Uno, MPU6050 accelerometer, two bending resistor and two buttons.
+We build a Power Glove which uses Arduino Uno, MPU6050 accelerometer, two bending resistor and two buttons.
 
 # How to use this project:
 1. Install Arduino IDE
 
-https://www.arduino.cc/en/Main/Software
+  https://www.arduino.cc/en/Main/Software
 
 2. Download libraries for Arduino.
 
