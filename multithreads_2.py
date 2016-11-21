@@ -37,7 +37,7 @@ def setup1():
 
 def openSerial():
     global ser
-    ser = serial.Serial('/dev/ttyACM4',115200)
+    ser = serial.Serial('/dev/ttyACM1',115200)
     
 def closeSerial():
     #global ser
