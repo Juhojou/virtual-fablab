@@ -1,13 +1,12 @@
 import bpy
-import random
 import serial
 import time
 import queue
-import multiprocessing
+import serial.tools.list_ports
 import threading
 import sys
 
-class myThread(threading.Thread):
+class serialLink(threading.Thread):
     # Thread for reading the usb port and adding to the queue 
     _ser = None
     _open = None
@@ -59,6 +58,8 @@ class myThread(threading.Thread):
                     #print(line)
                     #q.put(line)
                         qlock.release()
+                except TypeError:
+                    print("type error")
                 except UnicodeError:
                     print("unicode error")
                     continue
@@ -90,10 +91,32 @@ class myThread(threading.Thread):
         time.sleep(10) # waits for 10 seconds so that the accelerometer values normalise
         print("done calibrating")
 
+    def checkPorts(self):
+        a = list(serial.tools.list_ports.comports())
+        if sys.platform.startswith('win'):
+            for port in a:
+                if "Arduino" in port[1]:
+                    return port[0]
+        elif sys.platform.startswith('linux'):
+            if len(a) > 0:
+                for b in a:
+                    line = b[0]
+                    #print(line)
+                #line = a[0]
+                #line = line.split(" ")
+                #line = line[0]
+                print(line)
+            return line
+        else:
+            print("No arduino connected")
+            return ""
+
     def openSerial(self):
         #global ser
         # open serial connection
-        self._ser = serial.Serial('/dev/ttyACM0',115200)
+        line = self.checkPorts()
+        self._ser = serial.Serial(line,115200)
+        #self._ser = serial.Serial('/dev/ttyACM0',115200)
     def closeSerial(self):
         #global ser
         self._ser.close()
@@ -173,8 +196,11 @@ class ModalTimerOperator(bpy.types.Operator):
             print("done")
             p.do_run = False
             p.closeSerial()
+            try:
+                qlock.release()
+            except RuntimeError:
+                print("runtime error")
             p.join()
-            quit = 1
             return {'FINISHED'}
 
         if event.type == 'TIMER':
@@ -208,7 +234,7 @@ if __name__ == "__main__":
     #global p
     qlock = threading.Lock() # thread lock
     q = queue.Queue() # the queue
-    p = myThread('aasithread',q) # create the thread
+    p = serialLink('aasithread',q) # create the thread
     p.start()
     #p.join()
     print("avattu")
