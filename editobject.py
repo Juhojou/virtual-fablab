@@ -9,6 +9,7 @@ import threading
 import sys
 import ctypes
 from ctypes import *
+from bpy.app.handlers import persistent
 
 class SerialLink(threading.Thread):
     # Thread for reading the usb port and adding to the queue 
@@ -60,7 +61,7 @@ class SerialLink(threading.Thread):
                                     ctr = 0
                                 tempC = c
                                 tempB = b
-                                if ctr == 5:
+                                if ctr == 3:
                                     defA, defB, defC = float(a), float(b), float(c)
                                     ctr = 6
                                     print("YAW alustettu")
@@ -297,15 +298,29 @@ def rotateCamera():
             bpy.ops.object.mode_set(mode='SCULPT')
             break
 
+"""https://blenderartists.org/forum/showthread.php?340820-How-to-start-a-Modal-Timer-at-launch-in-an-addon
+was used as a guideline how to implement modal timer operator in a blender addon"""
+@persistent
+def my_handler2(scene):
+    bpy.ops.wm.modal_timer_operator()
+    bpy.app.handlers.frame_change_post.remove(my_handler2)
+
+@persistent
+def my_handler(scene):
+    bpy.app.handlers.frame_change_post.append(my_handler2)
+    bpy.context.scene.frame_current=bpy.context.scene.frame_current
+    bpy.app.handlers.scene_update_post.remove(my_handler)
+
 
 def register():
     global p
-    bpy.utils.register_class(ModalTimerOperator)
     qlock = threading.Lock() # thread lock
     q = queue.Queue() # the queue
     p = SerialLink('serial thread',q, qlock) # create the thread
     p.start()
-    #p.join()
+
+    bpy.utils.register_module(__name__)
+    bpy.app.handlers.scene_update_post.append(my_handler)
     print("Thread made and establishing connecion with arduino device")
     if sys.platform.startswith('win'):
         width, height = getScreenCenter()
@@ -313,10 +328,8 @@ def register():
     bpy.ops.wm.modal_timer_operator()
 
 def unregister():
-    bpy.utils.unregister_class(ModalTimerOperator)
+    bpy.utils.unregister_module(__name__)
 
 
 if __name__ == "__main__":
-    register()
-    # test call
-    #bpy.ops.wm.modal_timer_operator()
+    register() #  running from text editor
