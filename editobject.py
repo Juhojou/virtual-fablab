@@ -325,7 +325,6 @@ def register():
     if sys.platform.startswith('win'):
         width, height = getScreenCenter()
         setCursorPosition(width, height)
-    bpy.ops.wm.modal_timer_operator()
 
 def unregister():
     bpy.utils.unregister_module(__name__)
