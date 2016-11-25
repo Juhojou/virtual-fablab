@@ -315,7 +315,18 @@ def rotateCamera():
             #bpy.ops.mesh.subdivide(number_cuts = 20)
             bpy.ops.object.mode_set(mode='SCULPT')
             break
-
+			
+def zoom():
+    value = 1 #If value > 0 = zoom in, value < 0 = zoom out
+    for window in bpy.context.window_manager.windows:
+    	screen = window.screen
+    	for area in screen.areas: 
+    		if area.type == 'VIEW_3D':
+    			for region in area.regions:
+    				if region.type == 'WINDOW':
+    					override = {'window': window, 'screen': screen, 'area': area, 'region': region}
+    					bpy.ops.view3d.zoom(override, delta=value, mx=0, my=0)
+    					break
 
 def register():
     global p
