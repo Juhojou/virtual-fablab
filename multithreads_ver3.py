@@ -244,13 +244,17 @@ class ModalTimerOperator(bpy.types.Operator):
         if event.type in {'RIGHTMOUSE', 'ESC'} or self.limits > 30:
             self.limits = 0
             self.cancel(context)
-            print("done")
+            print("Exiting program")
             p.do_run = False
-            p.closeSerial()
+            try:
+                p.closeSerial()
+            except:
+                pass
             try:
                 p.qlock.release()
             except RuntimeError:
-                print("runtime error")
+                pass
+                #print("runtime error")
             p.join()
             return {'FINISHED'}
 
@@ -321,7 +325,7 @@ def register():
     p = SerialLink('aasithread',q, qlock) # create the thread
     p.start()
     #p.join()
-    print("avattu")
+    print("Thread made and establishing connecion with arduino device")
     if sys.platform.startswith('win'):
         width, height = getScreenCenter()
         setCursorPosition(width, height)
