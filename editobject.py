@@ -45,12 +45,15 @@ class SerialLink(threading.Thread):
                         line = line.strip('\r\n')
                         line = line.split('\t')
                         print(line)
-                        if len(line) == 4:
+                        if len(line) == 6:
                             self.qlock.acquire()
                             a = float(line[1])
                             b = float(line[2])
                             c = float(line[3])
-                            
+                            zoom1 = line[4]
+                            if (zoom1 == "0"):
+                                #print("ZOOOOOM")
+                                zoom()
                             if ctr < 5:
                                 #print("aasi")
                                 if (c == tempC and b == tempB):
@@ -172,8 +175,8 @@ class ModalTimerOperator(bpy.types.Operator):
             a = float(line[1])
             b = float(line[2])
             c = float(line[3])
-            defB = float(line[4])
-            defC = float(line[5])
+            defB = float(line[6])#  when button has been added 
+            defC = float(line[7])# 
             pi = 3.14159265358979
             p.qlock.release()
             #obj.rotation_euler = (b , c , a)
@@ -322,6 +325,7 @@ def register():
     bpy.utils.register_module(__name__)
     bpy.app.handlers.scene_update_post.append(my_handler)
     print("Thread made and establishing connecion with arduino device")
+    rotateCamera()
     if sys.platform.startswith('win'):
         width, height = getScreenCenter()
         setCursorPosition(width, height)
