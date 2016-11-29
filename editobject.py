@@ -10,6 +10,7 @@ import sys
 import ctypes
 from ctypes import *
 from bpy.app.handlers import persistent
+from bpy.props import BoolProperty
 
 class SerialLink(threading.Thread):
 	# Thread for reading the usb port and adding to the queue 
@@ -88,7 +89,6 @@ class SerialLink(threading.Thread):
 				except UnicodeError:
 					pass
 				except ValueError:
-
 					pass
 				except KeyboardInterrupt:
 					pass
@@ -162,8 +162,6 @@ class ModalTimerOperator(bpy.types.Operator):
 	"""Operator which runs its self from a timer"""
 	bl_idname = "wm.modal_timer_operator"
 	bl_label = "Modal Timer Operator"
-
-	limits = bpy.props.IntProperty(default=0)
 	_timer = None
 	
 	def rotateObject(self):
@@ -218,8 +216,7 @@ class ModalTimerOperator(bpy.types.Operator):
 
 	def modal(self, context, event):
 		
-		if event.type in {'RIGHTMOUSE', 'ESC'} or self.limits > 30:
-			self.limits = 0
+		if event.type in {'RIGHTMOUSE', 'ESC'} or bpy.types.Scene.enable_prop == False:
 			self.cancel(context)
 			print("Exiting program")
 			p.do_run = False
@@ -250,6 +247,36 @@ class ModalTimerOperator(bpy.types.Operator):
 	def cancel(self, context):
 		wm = context.window_manager
 		wm.event_timer_remove(self._timer)
+	
+class TestiPaneeli(bpy.types.Panel):
+	"""Creates a Panel in the Object properties window"""
+	
+	bl_category = "TAB NAME"  # name seen in tab
+	bl_label = "Paneelin nimi tähän" # caption of the opened panel
+	bl_idname = "Paneeli"  # unique not seen name of each panel
+	bl_space_type = 'VIEW_3D'
+	bl_region_type = 'TOOLS'
+	bl_context = "objectmode"  # sculpt?
+		   
+	def draw_header(self, context):
+		layout = self.layout
+		obj = context.object
+ 
+	def draw(self, context):
+		scene = context.scene
+		layout = self.layout
+		
+		row = layout.row()
+		row.label(text="Check this to launch program")
+			   
+		row = layout.row() 
+		row.prop(scene,"enable_prop")
+		
+		# Using checkbox and number of threads to run actual program	   
+		t = threading.enumerate()
+		if scene.enable_prop and len(t) == 1:
+			#print("Enabled")
+			run()  # Käynnistä ohjelma
 
 # Definition of point structure - Windows
 class POINT(Structure):
@@ -323,7 +350,7 @@ def register():
 	q = queue.Queue() # the queue
 	p = SerialLink('serial thread',q, qlock) # create the thread
 	p.start()
-
+	bpy.types.Scene.enable_prop = bpy.props.BoolProperty(name="Run", description="Check this to lauch program", default = False)  
 	bpy.utils.register_module(__name__)
 	bpy.app.handlers.scene_update_post.append(my_handler)
 	print("Thread made and establishing connecion with arduino device")
@@ -334,6 +361,7 @@ def register():
 
 def unregister():
 	bpy.utils.unregister_module(__name__)
+	del bpy.types.Scene.enable_prop
 
 
 if __name__ == "__main__":
