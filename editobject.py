@@ -53,10 +53,16 @@ class SerialLink(threading.Thread):
 							c = float(line[3])
 							zoom1 = line[4]
 							zoom2 = line[5]
-							if (zoom1 == "0"):
-								zoom(1)
-							if (zoom2 == "0" and zoom2 > 55):
-								zoom(-1)
+							if (zoom1 == "0" and float(zoom2) > 55):
+                                ctr_zoom += 1
+                                if (ctr_zoom % 2 == 1):
+                                    zoom(-1)
+                            elif (zoom1 == "0"):
+                                ctr_zoom += 1
+                                if (ctr_zoom % 2 == 1):
+                                    zoom(1)   
+                            else:
+                                ctr_zoom = 0
 							if ctr < 5:
 								#print("aasi")
 								if (c == tempC and b == tempB):
@@ -248,7 +254,7 @@ class ModalTimerOperator(bpy.types.Operator):
 		wm = context.window_manager
 		wm.event_timer_remove(self._timer)
 	
-class TestiPaneeli(bpy.types.Panel):
+class Test(bpy.types.Panel):
 	"""Creates a Panel in the Object properties window"""
 	
 	bl_category = "TAB NAME"  # name seen in tab
@@ -305,16 +311,19 @@ def getScreenCenter():
 	return x, y
 	   
 def zoom(value):
-	#value = 1 #If value > 0 = zoom in, value < 0 = zoom out
-	for window in bpy.context.window_manager.windows:
-		screen = window.screen
-		for area in screen.areas: 
-			if area.type == 'VIEW_3D':
-				for region in area.regions:
-					if region.type == 'WINDOW':
-						override = {'window': window, 'screen': screen, 'area': area, 'region': region}
-						bpy.ops.view3d.zoom(override, delta=value, mx=0, my=0)
-						break
+    # can cause blender to crash
+    #value = 1 #If value > 0 = zoom in, value < 0 = zoom out
+    for window in bpy.context.window_manager.windows:
+        screen = window.screen
+        for area in screen.areas: 
+            if area.type == 'VIEW_3D':
+                #bpy.ops.object.mode_set(mode = 'EDIT')
+                for region in area.regions:
+                    if region.type == 'WINDOW':
+                        override = {'blend_data': bpy.context.blend_data,'mode': 'SCULPT','active_object': bpy.context.scene.objects.active,'scene': bpy.context.scene,'window': window, 'screen': screen, 'area': area, 'region': region}
+                        bpy.ops.view3d.zoom(override, delta=value, mx=0, my=0)
+                        #bpy.ops.object.mode_set(mode='SCULPT')
+                        break
 
 def rotateCamera():
 	#bpy.ops.object.delete(use_global=False)
@@ -328,6 +337,7 @@ def rotateCamera():
 			bpy.ops.object.mode_set(mode = 'EDIT')
 			#bpy.ops.mesh.subdivide(number_cuts = 20)
 			bpy.ops.object.mode_set(mode='SCULPT')
+			bpy.ops.screen.screen_full_area(override, use_hide_panels=True)
 			break
 
 """https://blenderartists.org/forum/showthread.php?340820-How-to-start-a-Modal-Timer-at-launch-in-an-addon
