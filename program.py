@@ -23,7 +23,6 @@ class SerialLink(threading.Thread):
 		self.qlock = qlock
 	def addBuffer1(self):
 		try:
-			#print("add buffer")
 			quit = 0
 			ctr = 0
 			tempB = 0
@@ -33,9 +32,7 @@ class SerialLink(threading.Thread):
 			connection = self.openConnection()
 			while getattr(s,"do_run", True) and connection: # waits for the event for the blender window
 				try:
-					#print("print asd")
 					line = self._ser.readline()
-					#print("add buffer mk2")
 					line = line.decode('utf-8')
 					if not line.find("demo") == -1:
 						self._ser.write(str.encode("a"))
@@ -46,30 +43,33 @@ class SerialLink(threading.Thread):
 						line = line.strip('\r\n')
 						line = line.split('\t')
 						print(line)
-						if len(line) == 6:
+						if len(line) == 7:
 							self.qlock.acquire()
 							a = float(line[1])
 							b = float(line[2])
 							c = float(line[3])
-							zoom1 = line[4]
-							zoom2 = line[5]
-							if (zoom1 == "0" and float(zoom2) > 55):
+							zoom_button = line[4]
+							sculpt_button = line[5]
+							flex_sensor = line[6]
+							if (zoom_button == "0" and float(flex_sensor) > 55):
 								ctr_zoom += 1
 								if (ctr_zoom % 2 == 1):
 									zoom(-1)
-							elif (zoom1 == "0"):
+							elif (zoom_button == "0"):
 								ctr_zoom += 1
 								if (ctr_zoom % 2 == 1):
-									zoom(1)	  
+									zoom(1)
+							elif (sculpt_button == "0"):
+								ctr_zoom += 1
+								if (ctr_zoom % 2 == 1):
+									click()									
 							else:
 								ctr_zoom = 0
 							if ctr < 5:
-								#print("aasi")
 								if (c == tempC and b == tempB):
 									ctr += 1
 									print(ctr)
 								else:
-									#print("else ctr")
 									ctr = 0
 								tempC = c
 								tempB = b
@@ -80,18 +80,12 @@ class SerialLink(threading.Thread):
 							
 							if defA:
 								if a > defA + 30 or a < defA - 30 or b > defB + 30 or b < defB - 30 or c > defC + 30 or c < defC - 30:
-									#print(line)
 									line.append(defB)
 									line.append(defC)
 									self.q.put(line)
-							
-							#q.put(line)
-						#print(line)
-						#q.put(line)
 							self.qlock.release()
 				except TypeError:
 					pass
-					#print("type error")
 				except UnicodeError:
 					pass
 				except ValueError:
@@ -109,10 +103,10 @@ class SerialLink(threading.Thread):
 		while port == None:
 			ctr += 1
 			if (ctr > 4):
-				print("Couldn't find arduino in reasonable time exiting program")
+				print("Couldn't find Arduino in reasonable time exiting program")
 				return False
 			time.sleep(5)
-			print("checking for arduino connected to a usb port")
+			print("Checking for Arduino connected to a usb port")
 			ports = list(serial.tools.list_ports.comports())
 			if sys.platform.startswith('win'):
 				for a in ports:
@@ -132,7 +126,7 @@ class SerialLink(threading.Thread):
 				self._ser = serial.Serial(port,115200, write_timeout=5) # opens the serial connection
 				closed = True
 			except SerialException:
-				print("problem opening connection retrying in 5 seconds")
+				print("Problem opening connection retrying in 5 seconds")
 				ctr += 1
 				if (ctr > 4):
 					print("Couldn't find open serial port in reasonable time exiting program")
@@ -143,10 +137,10 @@ class SerialLink(threading.Thread):
 		while not write: # tries to write to the arduino so that the arduino knows to start sending data
 			try:
 				self._ser.write(str.encode('A')) # the arduino waits for a character to start sending data
-				print("Sent character to arduino")
-				print("calibrating")
+				print("Sent character to Arduino")
+				print("Calibrating...")
 				time.sleep(10) # waits for 10 seconds so that the accelerometer values normalise
-				print("done calibrating")
+				print("Calibrating finished!")
 				write =	 True
 			except:
 				print("Couldn't write to the serial port\nRetrying in 5 seconds")
@@ -173,7 +167,6 @@ class ModalTimerOperator(bpy.types.Operator):
 	def rotateObject(self):
 		#try:
 		obj = bpy.context.active_object
-		#print("rota")
 		if not p.q.empty():
 			#print("ting")
 			p.qlock.acquire()
@@ -181,8 +174,8 @@ class ModalTimerOperator(bpy.types.Operator):
 			a = float(line[1])
 			b = float(line[2])
 			c = float(line[3])
-			defB = float(line[6])#	when button has been added 
-			defC = float(line[7])# 
+			defB = float(line[7])#	when button has been added 
+			defC = float(line[8])# 
 			pi = 3.14159265358979
 			p.qlock.release()
 			#obj.rotation_euler = (b , c , a)
@@ -234,7 +227,6 @@ class ModalTimerOperator(bpy.types.Operator):
 				p.qlock.release() # release the queue lock if it is locked
 			except RuntimeError:
 				pass
-				#print("runtime error")
 			p.join()
 			return {'FINISHED'}
 
@@ -281,7 +273,6 @@ class Test(bpy.types.Panel):
 		# Using checkbox and number of threads to run actual program	   
 		t = threading.enumerate()
 		if scene.enable_prop and len(t) == 1:
-			#print("Enabled")
 			run()  # Käynnistä ohjelma
 
 # Definition of point structure - Windows
@@ -335,7 +326,10 @@ def rotateCamera():
 			bpy.ops.view3d.viewnumpad(override, type = 'FRONT')
 			#bpy.ops.view3d.view_orbit(type = 'ORBITUP')
 			bpy.ops.object.mode_set(mode = 'EDIT')
-			#bpy.ops.mesh.subdivide(number_cuts = 20)
+			i=0
+			while (i<5 and len(bpy.context.active_object.data.vertices) < 25000):
+				bpy.ops.mesh.subdivide()
+				i += 1
 			bpy.ops.object.mode_set(mode='SCULPT')
 			bpy.ops.screen.screen_full_area(override, use_hide_panels=True)
 			break
@@ -363,7 +357,7 @@ def register():
 	bpy.types.Scene.enable_prop = bpy.props.BoolProperty(name="Run", description="Check this to lauch program", default = False)  
 	bpy.utils.register_module(__name__)
 	bpy.app.handlers.scene_update_post.append(my_handler)
-	print("Thread made and establishing connecion with arduino device")
+	print("Thread made and establishing connecion with Arduino device")
 	rotateCamera()
 	if sys.platform.startswith('win'):
 		width, height = getScreenCenter()
