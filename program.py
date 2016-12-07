@@ -46,13 +46,13 @@ class SerialLink(threading.Thread):
 						line = line.strip('\r\n')
 						line = line.split('\t')
 						print(line)
-						if len(line) == 6:
+						if len(line) == 7: ## hox 6? 8?
 							self.qlock.acquire()
 							a = float(line[1])
 							b = float(line[2])
 							c = float(line[3])
 							zoom1 = line[4]
-							zoom2 = line[5]
+							zoom2 = line[6]
 							if (zoom1 == "0" and float(zoom2) > 55):
 								ctr_zoom += 1
 								if (ctr_zoom % 2 == 1):
@@ -337,7 +337,7 @@ def rotateCamera():
 			bpy.ops.object.mode_set(mode = 'EDIT')
 			#bpy.ops.mesh.subdivide(number_cuts = 20)
 			bpy.ops.object.mode_set(mode='SCULPT')
-			bpy.ops.screen.screen_full_area(override, use_hide_panels=True)
+			#bpy.ops.screen.screen_full_area(override, use_hide_panels=True)
 			break
 
 """https://blenderartists.org/forum/showthread.php?340820-How-to-start-a-Modal-Timer-at-launch-in-an-addon
