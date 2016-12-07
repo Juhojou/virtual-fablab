@@ -16,11 +16,13 @@ class SerialLink(threading.Thread):
 	# Thread for reading the usb port and adding to the queue 
 	_ser = None
 	_open = None
+	
 	def __init__(self,name,q, qlock):
 		threading.Thread.__init__(self)
 		self.name = name
 		self.q = q
 		self.qlock = qlock
+		
 	def addBuffer1(self):
 		try:
 			quit = 0
@@ -30,7 +32,7 @@ class SerialLink(threading.Thread):
 			defA, defB, defC = None, None, None
 			s = threading.currentThread()
 			connection = self.openConnection()
-			while getattr(s,"do_run", True) and connection: # waits for the event for the blender window
+			while getattr(s,"do_run", True) and connection: # Waits for the event for the blender window
 				try:
 					line = self._ser.readline()
 					line = line.decode('utf-8')
@@ -62,7 +64,7 @@ class SerialLink(threading.Thread):
 							elif (sculpt_button == "0"):
 								ctr_zoom += 1
 								if (ctr_zoom % 2 == 1):
-									click()									
+									click() 								
 							else:
 								ctr_zoom = 0
 							if ctr < 5:
@@ -134,14 +136,14 @@ class SerialLink(threading.Thread):
 				time.sleep(5)
 		write = False
 		ctr = 0
-		while not write: # tries to write to the arduino so that the arduino knows to start sending data
+		while not write: # Tries to write to the arduino so that the Arduino knows to start sending data
 			try:
-				self._ser.write(str.encode('A')) # the arduino waits for a character to start sending data
+				self._ser.write(str.encode('A')) # The Arduino waits for a character to start sending data
 				print("Sent character to Arduino")
 				print("Calibrating...")
-				time.sleep(10) # waits for 10 seconds so that the accelerometer values normalise
+				time.sleep(10) # Waits for 10 seconds so that the accelerometer values normalise
 				print("Calibrating finished!")
-				write =	 True
+				write =  True
 			except:
 				print("Couldn't write to the serial port\nRetrying in 5 seconds")
 				ctr += 1
@@ -168,33 +170,32 @@ class ModalTimerOperator(bpy.types.Operator):
 		#try:
 		obj = bpy.context.active_object
 		if not p.q.empty():
-			#print("ting")
 			p.qlock.acquire()
 			line = p.q.get();
 			a = float(line[1])
 			b = float(line[2])
 			c = float(line[3])
-			defB = float(line[7])#	when button has been added 
-			defC = float(line[8])# 
+			defB = float(line[7])
+			defC = float(line[8]) 
 			pi = 3.14159265358979
 			p.qlock.release()
 			#obj.rotation_euler = (b , c , a)
 			
 			"""Determines the object rotation directions and if the sensor has moved enough to rotate the object"""
 			if a > obj.rotation_euler.z + 30:
-	 #			 rotation.append("+a")
+	 #  		 rotation.append("+a")
 				#obj.rotation_euler.z -= pi/16
 				pass
 						   
 			if a < obj.rotation_euler.z - 30:
-	#			 rotation.append("-a")		 
+	#   		 rotation.append("-a")  	 
 				#obj.rotation_euler.z += pi/16
 				pass
 					
 			if c > defC + 30: # c < obj.rotation_euler.y + 30
 				#rotation.append("+b") 
 				obj.rotation_euler.y += pi/16
-				#pass	  
+				#pass     
 			if c < defC - 30: # c > obj.rotation_euler.y
 				#rotation.append("-b")
 				obj.rotation_euler.y -= pi/16
@@ -202,7 +203,7 @@ class ModalTimerOperator(bpy.types.Operator):
 					
 			if b > defB + 30: # b > obj.rotation_euler.x
 				#rotation.append("+c") 
-				obj.rotation_euler.x += pi/16	  
+				obj.rotation_euler.x += pi/16     
 				#pass
 			if b < defB - 30: # b > obj.rotation_euler.x
 				#rotation.append("-c")
@@ -214,17 +215,16 @@ class ModalTimerOperator(bpy.types.Operator):
 		#except KeyboardInterrupt:
 
 	def modal(self, context, event):
-		
 		if event.type in {'RIGHTMOUSE', 'ESC'} or bpy.types.Scene.enable_prop == False:
 			self.cancel(context)
 			print("Exiting program")
 			p.do_run = False
 			try:
-				p.closeSerial() # try to close the serial
+				p.closeSerial() # Try to close the serial
 			except:
 				pass
 			try:
-				p.qlock.release() # release the queue lock if it is locked
+				p.qlock.release() # Release the queue lock if it is locked
 			except RuntimeError:
 				pass
 			p.join()
@@ -238,7 +238,6 @@ class ModalTimerOperator(bpy.types.Operator):
 	def execute(self, context):
 		wm = context.window_manager
 		self._timer = wm.event_timer_add(time_step=0.01, window=context.window)
-		#rotateCamera()
 		wm.modal_handler_add(self)
 		return {'RUNNING_MODAL'}
 
@@ -248,13 +247,12 @@ class ModalTimerOperator(bpy.types.Operator):
 	
 class Test(bpy.types.Panel):
 	"""Creates a Panel in the Object properties window"""
-	
-	bl_category = "TAB NAME"  # name seen in tab
-	bl_label = "Paneelin nimi tähän" # caption of the opened panel
-	bl_idname = "Paneeli"  # unique not seen name of each panel
+	bl_category = "TAB NAME"  # Name seen in tab
+	bl_label = "Paneelin nimi tähän" # Caption of the opened panel
+	bl_idname = "Paneeli"  # Unique not seen name of each panel
 	bl_space_type = 'VIEW_3D'
 	bl_region_type = 'TOOLS'
-	bl_context = "objectmode"  # sculpt?
+	bl_context = "objectmode"  # Cculpt?
 		   
 	def draw_header(self, context):
 		layout = self.layout
@@ -273,7 +271,7 @@ class Test(bpy.types.Panel):
 		# Using checkbox and number of threads to run actual program	   
 		t = threading.enumerate()
 		if scene.enable_prop and len(t) == 1:
-			run()  # Käynnistä ohjelma
+			run()  # Start the program
 
 # Definition of point structure - Windows
 class POINT(Structure):
@@ -291,8 +289,8 @@ def setCursorPosition(x, y):
 
 # Left mouse button click - Windows
 def click():
-	ctypes.windll.user32.mouse_event(0x2, 0,0,0,0)	  # MouseLeft clicked Down
-	ctypes.windll.user32.mouse_event(0x4, 0,0,0,0)	  # MouseLeft clicked Up
+	ctypes.windll.user32.mouse_event(0x2, 0,0,0,0)    # MouseLeft clicked Down
+	ctypes.windll.user32.mouse_event(0x4, 0,0,0,0)    # MouseLeft clicked Up
 	
 # Get coordinates for center of screen - Windows
 def getScreenCenter():
@@ -302,13 +300,11 @@ def getScreenCenter():
 	return x, y
 	   
 def zoom(value):
-	# can cause blender to crash
-	#value = 1 #If value > 0 = zoom in, value < 0 = zoom out
+	# Can cause blender to crash
 	for window in bpy.context.window_manager.windows:
 		screen = window.screen
 		for area in screen.areas: 
 			if area.type == 'VIEW_3D':
-				#bpy.ops.object.mode_set(mode = 'EDIT')
 				for region in area.regions:
 					if region.type == 'WINDOW':
 						override = {'blend_data': bpy.context.blend_data,'mode': 'SCULPT','active_object': bpy.context.scene.objects.active,'scene': bpy.context.scene,'window': window, 'screen': screen, 'area': area, 'region': region}
@@ -326,13 +322,20 @@ def rotateCamera():
 			bpy.ops.view3d.viewnumpad(override, type = 'FRONT')
 			#bpy.ops.view3d.view_orbit(type = 'ORBITUP')
 			bpy.ops.object.mode_set(mode = 'EDIT')
-			i=0
-			while (i<5 and len(bpy.context.active_object.data.vertices) < 25000):
-				bpy.ops.mesh.subdivide()
-				i += 1
+			subdivideObject()
 			bpy.ops.object.mode_set(mode='SCULPT')
 			bpy.ops.screen.screen_full_area(override, use_hide_panels=True)
 			break
+
+def subdivideObject():
+	while (True):
+		print(len(bpy.context.active_object.data.vertices))
+		bpy.context.active_object.update_from_editmode()
+		if len(bpy.context.active_object.data.vertices) > 25000:
+			print(len(bpy.context.active_object.data.vertices))
+			break
+		else:
+			bpy.ops.mesh.subdivide()
 
 """https://blenderartists.org/forum/showthread.php?340820-How-to-start-a-Modal-Timer-at-launch-in-an-addon
 was used as a guideline how to implement modal timer operator in a blender addon"""
@@ -350,9 +353,9 @@ def my_handler(scene):
 
 def register():
 	global p
-	qlock = threading.Lock() # thread lock
-	q = queue.Queue() # the queue
-	p = SerialLink('serial thread',q, qlock) # create the thread
+	qlock = threading.Lock()
+	q = queue.Queue()
+	p = SerialLink('serial thread',q, qlock) #Create the thread
 	p.start()
 	bpy.types.Scene.enable_prop = bpy.props.BoolProperty(name="Run", description="Check this to lauch program", default = False)  
 	bpy.utils.register_module(__name__)
@@ -369,4 +372,4 @@ def unregister():
 
 
 if __name__ == "__main__":
-	register() #  running from text editor
+	register() #  Running from text editor
