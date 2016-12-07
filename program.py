@@ -23,7 +23,7 @@ class SerialLink(threading.Thread):
 		self.q = q
 		self.qlock = qlock
 		
-	def addBuffer1(self):
+	def add_buffer(self):
 		try:
 			quit = 0
 			ctr = 0
@@ -31,7 +31,7 @@ class SerialLink(threading.Thread):
 			tempC = 0
 			defA, defB, defC = None, None, None
 			s = threading.currentThread()
-			connection = self.openConnection()
+			connection = self.open_connection()
 			while getattr(s,"do_run", True) and connection: # Waits for the event for the blender window
 				try:
 					line = self._ser.readline()
@@ -97,7 +97,7 @@ class SerialLink(threading.Thread):
 		except serial.serialutil.SerialException: # FileNotFoundError
 			print("Serial error!!")
 
-	def openConnection(self):
+	def open_connection(self):
 		"""Opens the connection to the arduino device and returns TRUE if successful"""
 		ports = []
 		port = None
@@ -152,13 +152,13 @@ class SerialLink(threading.Thread):
 					return False
 		return True
 
-	def closeSerial(self):
+	def close_serial(self):
 		self._ser.close()
 
 	def run(self):
 		time.sleep(3)
 		print("slept")
-		self.addBuffer1()
+		self.add_buffer()
 
 class ModalTimerOperator(bpy.types.Operator):
 	"""Operator which runs its self from a timer"""
@@ -166,7 +166,7 @@ class ModalTimerOperator(bpy.types.Operator):
 	bl_label = "Modal Timer Operator"
 	_timer = None
 	
-	def rotateObject(self):
+	def rotate_object(self):
 		#try:
 		obj = bpy.context.active_object
 		if not p.q.empty():
@@ -220,7 +220,7 @@ class ModalTimerOperator(bpy.types.Operator):
 			print("Exiting program")
 			p.do_run = False
 			try:
-				p.closeSerial() # Try to close the serial
+				p.close_serial() # Try to close the serial
 			except:
 				pass
 			try:
@@ -231,7 +231,7 @@ class ModalTimerOperator(bpy.types.Operator):
 			return {'FINISHED'}
 
 		if event.type == 'TIMER':
-			self.rotateObject()
+			self.rotate_object()
 
 		return {'PASS_THROUGH'}
 
@@ -278,13 +278,13 @@ class POINT(Structure):
 	_fields_ = [("x", c_ulong), ("y", c_ulong)]
 
 # Get cursor position - Windows
-def getCursorPosition():
+def get_cursor_position():
    point = POINT()
    windll.user32.GetCursorPos(byref(point))
    return point.x, point.y
 
 # Set cursor position - Windows
-def setCursorPosition(x, y):
+def set_cursor_position(x, y):
    windll.user32.SetCursorPos(x, y)
 
 # Left mouse button click - Windows
@@ -293,7 +293,7 @@ def click():
 	ctypes.windll.user32.mouse_event(0x4, 0,0,0,0)    # MouseLeft clicked Up
 	
 # Get coordinates for center of screen - Windows
-def getScreenCenter():
+def get_screen_center():
 	user32 = ctypes.windll.user32
 	x = int(user32.GetSystemMetrics(0)/2)
 	y = int(user32.GetSystemMetrics(1)/2)
@@ -312,7 +312,7 @@ def zoom(value):
 						#bpy.ops.object.mode_set(mode='SCULPT')
 						break
 
-def rotateCamera():
+def rotate_camera():
 	#bpy.ops.object.delete(use_global=False)
 	#bpy.ops.mesh.primitive_cube_add()
 	for area in bpy.context.screen.areas:
@@ -322,17 +322,15 @@ def rotateCamera():
 			bpy.ops.view3d.viewnumpad(override, type = 'FRONT')
 			#bpy.ops.view3d.view_orbit(type = 'ORBITUP')
 			bpy.ops.object.mode_set(mode = 'EDIT')
-			subdivideObject()
+			subdivide_object()
 			bpy.ops.object.mode_set(mode='SCULPT')
 			bpy.ops.screen.screen_full_area(override, use_hide_panels=True)
 			break
 
-def subdivideObject():
+def subdivide_object():
 	while (True):
-		print(len(bpy.context.active_object.data.vertices))
 		bpy.context.active_object.update_from_editmode()
 		if len(bpy.context.active_object.data.vertices) > 25000:
-			print(len(bpy.context.active_object.data.vertices))
 			break
 		else:
 			bpy.ops.mesh.subdivide()
@@ -361,10 +359,10 @@ def register():
 	bpy.utils.register_module(__name__)
 	bpy.app.handlers.scene_update_post.append(my_handler)
 	print("Thread made and establishing connecion with Arduino device")
-	rotateCamera()
+	rotate_camera()
 	if sys.platform.startswith('win'):
-		width, height = getScreenCenter()
-		setCursorPosition(width, height)
+		width, height = get_screen_center()
+		set_cursor_position(width, height)
 
 def unregister():
 	bpy.utils.unregister_module(__name__)
