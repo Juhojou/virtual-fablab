@@ -8,6 +8,7 @@ import serial.tools.list_ports
 import threading
 import sys
 import ctypes
+from pymouse import PyMouse
 from ctypes import *
 from bpy.app.handlers import persistent
 from bpy.props import BoolProperty
@@ -22,6 +23,7 @@ class SerialLink(threading.Thread):
 		self.q = q
 		self.qlock = qlock
 	def addBuffer1(self):
+        """Handles the serial connection and adding to the queue"""
 		try:
 			#print("add buffer")
 			quit = 0
@@ -32,7 +34,7 @@ class SerialLink(threading.Thread):
 			s = threading.currentThread()
 			connection = self.openConnection()
 			while getattr(s,"do_run", True) and connection: # waits for the event for the blender window
-				try:
+				try:                                        # the loop that adds incoming data to the queue
 					#print("print asd")
 					line = self._ser.readline()
 					#print("add buffer mk2")
@@ -303,7 +305,12 @@ def getScreenCenter():
 	x = int(user32.GetSystemMetrics(0)/2)
 	y = int(user32.GetSystemMetrics(1)/2)
 	return x, y
-	   
+
+def linuxClick():
+    m = PyMouse()
+    x_dim, y_dim = m.screen_size()
+    m.click(x_dim/2,y_dim/2,1)
+
 def zoom(value):
 	#value = 1 #If value > 0 = zoom in, value < 0 = zoom out
 	for window in bpy.context.window_manager.windows:
