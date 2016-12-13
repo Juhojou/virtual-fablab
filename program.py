@@ -10,7 +10,7 @@ import sys
 import ctypes
 from ctypes import *
 from bpy.app.handlers import persistent
-from bpy.props import BoolProperty
+from bpy.props import EnumProperty
 from math import radians
 from mathutils import Matrix
 
@@ -37,6 +37,8 @@ class SerialLink(threading.Thread):
             defA, defB, defC = None, None, None
             s = threading.currentThread()
             connection = self.open_connection()
+            if not connection:
+                bpy.context.scene.enable_prop = '0'
             while getattr(s,"do_run", True) and connection: # Waits for the event for the blender window
                 try:
                     line = self._ser.readline()
@@ -111,6 +113,8 @@ class SerialLink(threading.Thread):
         port = None
         ctr = 0
         while port == None:
+            if bpy.context.scene.enable_prop == '0':
+                return False
             ctr += 1
             if (ctr > 4):
                 print("Couldn't find Arduino in reasonable time exiting program")
@@ -132,6 +136,8 @@ class SerialLink(threading.Thread):
         closed = False
         ctr = 0
         while not closed:
+            if bpy.context.scene.enable_prop == '0':
+                return False
             try:
                 self._ser = serial.Serial(port,115200, write_timeout=5) # opens the serial connection
                 closed = True
@@ -145,6 +151,8 @@ class SerialLink(threading.Thread):
         write = False
         ctr = 0
         while not write: # Tries to write to the arduino so that the Arduino knows to start sending data
+            if bpy.context.scene.enable_prop == '0':
+                return False
             try:
                 self._ser.write(str.encode('A')) # The Arduino waits for a character to start sending data
                 print("Sent character to Arduino")
@@ -242,7 +250,8 @@ class ModalTimerOperator(bpy.types.Operator):
         #except KeyboardInterrupt:
 
     def modal(self, context, event):
-        if event.type in {'RIGHTMOUSE', 'ESC'} or bpy.types.Scene.enable_prop == False:
+        if event.type in {'RIGHTMOUSE', 'ESC'} or bpy.context.scene.enable_prop == '0':
+            bpy.context.scene.enable_prop = '0'
             self.cancel(context)
             print("Exiting program")
             p.do_run = False
@@ -255,6 +264,15 @@ class ModalTimerOperator(bpy.types.Operator):
             except RuntimeError:
                 pass
             p.join()
+            
+            # Updating panel once after program has stopped            
+            context.scene.enable_prop = '0'
+            for area in bpy.context.screen.areas:
+                if area.type == 'VIEW_3D':
+                    area.tag_redraw()
+            
+            # DISABLE FULLSCREEN HERE
+            
             return {'FINISHED'}
 
         if event.type == 'TIMER':
@@ -272,33 +290,60 @@ class ModalTimerOperator(bpy.types.Operator):
         wm = context.window_manager
         wm.event_timer_remove(self._timer)
     
-class Test(bpy.types.Panel):
+class PanelControl(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
-    bl_category = "TAB NAME"  # Name seen in tab
-    bl_label = "Paneelin nimi tähän" # Caption of the opened panel
+    bl_category = "EditObject"  # Name seen in tab
+    bl_label = "EditObject" # Caption of the opened panel
     bl_idname = "Paneeli"  # Unique not seen name of each panel
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
-    bl_context = "objectmode"  # Cculpt?
-           
-    def draw_header(self, context):
-        layout = self.layout
-        obj = context.object
- 
+    #bl_context = "objectmode"  # sculpt?
+    
+    @classmethod
+    def poll(cls, context):
+        #print("panel poll")
+        return context.active_object is not None
+       
     def draw(self, context):
-        scene = context.scene
-        layout = self.layout
         
+        scene = context.scene
+        
+        layout = self.layout       
         row = layout.row()
         row.label(text="Check this to launch program")
-               
-        row = layout.row() 
-        row.prop(scene,"enable_prop")
         
-        # Using checkbox and number of threads to run actual program       
-        t = threading.enumerate()
-        if scene.enable_prop and len(t) == 1:
-            run()  # Start the program
+        row = layout.row() 
+        row.prop(scene,"enable_prop", expand=True)
+
+class PanelTimer(bpy.types.Operator):
+    """This check if program is enabled in panel"""
+    bl_idname = "wm.panel_modal_timer"
+    bl_label = "Panel Modal Timer"
+
+    _timer = None
+    
+    @classmethod
+    def running(cls, context):
+        print("ASD")
+        return (cls._timer)
+
+    def modal(self, context, event):
+        if event.type == 'TIMER':
+            if bpy.context.scene.enable_prop == '1' and len(threading.enumerate()) == 1:
+                print("RUN")
+                run()
+      
+        return {'PASS_THROUGH'}
+    
+    def execute(self, context):
+        wm = context.window_manager
+        self._timer = wm.event_timer_add(0.5, context.window)
+        wm.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def cancel(self, context):
+        wm = context.window_manager
+        wm.event_timer_remove(self._timer)
 
 # Definition of point structure - Windows
 class POINT(Structure):
@@ -346,7 +391,7 @@ def rotate_camera():
         if area.type == 'VIEW_3D':
             override = bpy.context.copy()
             override['area'] = area
-            bpy.ops.view3d.viewnumpad(override, type = 'FRONT')
+            #bpy.ops.view3d.viewnumpad(override, type = 'FRONT')
             #bpy.ops.view3d.view_orbit(type = 'ORBITUP')
             bpy.ops.object.mode_set(mode = 'EDIT')
             subdivide_object()
@@ -375,21 +420,35 @@ def my_handler(scene):
     bpy.context.scene.frame_current=bpy.context.scene.frame_current
     bpy.app.handlers.scene_update_post.remove(my_handler)
 
+@persistent
+def panel_handler2(scene):
+    bpy.ops.wm.panel_modal_timer()
+    bpy.app.handlers.frame_change_post.remove(panel_handler2)
 
-def register():
+@persistent
+def panel_handler(scene):
+    bpy.app.handlers.frame_change_post.append(panel_handler2)
+    bpy.context.scene.frame_current=bpy.context.scene.frame_current
+    bpy.app.handlers.scene_update_post.remove(panel_handler)
+
+def run():
+#    # This is executed when program is enabled in panel
     global p
     qlock = threading.Lock()
     q = queue.Queue()
     p = SerialLink('serial thread',q, qlock) #Create the thread
     p.start()
-    bpy.types.Scene.enable_prop = bpy.props.BoolProperty(name="Run", description="Check this to lauch program", default = False)  
-    bpy.utils.register_module(__name__)
     bpy.app.handlers.scene_update_post.append(my_handler)
     print("Thread made and establishing connecion with Arduino device")
     rotate_camera()
     if sys.platform.startswith('win'):
         width, height = get_screen_center()
         set_cursor_position(width, height)
+
+def register():
+    bpy.types.Scene.enable_prop = bpy.props.EnumProperty(items = (('0','Stop', ''),('1','Run','')))
+    bpy.utils.register_module(__name__)
+    bpy.app.handlers.scene_update_post.append(panel_handler)
 
 def unregister():
     bpy.utils.unregister_module(__name__)
