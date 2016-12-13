@@ -18,6 +18,7 @@ class SerialLink(threading.Thread):
     # Thread for reading the usb port and adding to the queue 
     _ser = None
     _open = None
+    ctr_distance = 0
     
     def __init__(self,name,q, qlock):
         threading.Thread.__init__(self)
@@ -31,6 +32,8 @@ class SerialLink(threading.Thread):
             ctr = 0
             tempB = 0
             tempC = 0
+            ctr_zoom = 0
+            ctr_sculpt = 0
             defA, defB, defC = None, None, None
             s = threading.currentThread()
             connection = self.open_connection()
@@ -59,16 +62,19 @@ class SerialLink(threading.Thread):
                                 ctr_zoom += 1
                                 if (ctr_zoom % 2 == 1):
                                     zoom(-1)
+                                    self.ctr_distance -= 1
                             elif (zoom_button == "0"):
                                 ctr_zoom += 1
                                 if (ctr_zoom % 2 == 1):
                                     zoom(1)
+                                    self.ctr_distance += 1
                             elif (sculpt_button == "0"):
-                                ctr_zoom += 1
-                                if (ctr_zoom % 2 == 1):
-                                    click()                                 
+                                ctr_sculpt += 1
+                                if (ctr_sculpt % 2 == 1):
+                                    click()                              
                             else:
                                 ctr_zoom = 0
+                                ctr_sculpt = 0
                             if ctr < 5:
                                 if (c == tempC and b == tempB):
                                     ctr += 1
