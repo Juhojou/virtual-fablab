@@ -90,14 +90,14 @@ MPU6050 mpu(0x69); // <-- use for AD0 high
 // (in degrees) calculated from the quaternions coming from the FIFO.
 // Note that Euler angles suffer from gimbal lock (for more info, see
 // http://en.wikipedia.org/wiki/Gimbal_lock)
-#define OUTPUT_READABLE_EULER
+//#define OUTPUT_READABLE_EULER
 
 // uncomment "OUTPUT_READABLE_YAWPITCHROLL" if you want to see the yaw/
 // pitch/roll angles (in degrees) calculated from the quaternions coming
 // from the FIFO. Note this also requires gravity vector calculations.
 // Also note that yaw/pitch/roll angles suffer from gimbal lock (for
 // more info, see: http://en.wikipedia.org/wiki/Gimbal_lock)
-//#define OUTPUT_READABLE_YAWPITCHROLL
+#define OUTPUT_READABLE_YAWPITCHROLL
 
 // uncomment "OUTPUT_READABLE_REALACCEL" if you want to see acceleration
 // components with gravity removed. This acceleration reference frame is
@@ -120,12 +120,9 @@ MPU6050 mpu(0x69); // <-- use for AD0 high
 
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
 bool blinkState = false;
-//button 1 pin
+//button pin
 int button_1 = 4;
 int button_1_state = 0;
-//button 2 pin
-int button_2 = 7;
-int button_2_state = 0;
 //flex sensor pin
 int flexSensorPin = A3;
 int flexSensorReading = 0;
@@ -241,7 +238,6 @@ void setup() {
     // configure LED for output
     pinMode(LED_PIN, OUTPUT);
     pinMode(button_1,INPUT_PULLUP);
-    pinMode(button_2,INPUT_PULLUP);
 }
 
 
@@ -256,9 +252,8 @@ void loop() {
 
     // wait for MPU interrupt or extra packet(s) available
     while (!mpuInterrupt && fifoCount < packetSize) {
-//      button_1_state = digitalRead(button_1);
-//      button_2_state = digitalRead(button_2);
-//      flexSensorReading = analogRead(flexSensorPin); 
+      button_1_state = digitalRead(button_1);
+      flexSensorReading = analogRead(flexSensorPin); 
         // other program behavior stuff here
         // .
         // .
@@ -278,10 +273,6 @@ void loop() {
     // get current FIFO count
     fifoCount = mpu.getFIFOCount();
 
-      button_1_state = digitalRead(button_1);
-      button_2_state = digitalRead(button_2);
-      flexSensorReading = analogRead(flexSensorPin); 
-
     // check for overflow (this should never happen unless our code is too inefficient)
     if ((mpuIntStatus & 0x10) || fifoCount == 1024) {
         // reset so we can continue cleanly
@@ -300,26 +291,6 @@ void loop() {
         // (this lets us immediately read more without waiting for an interrupt)
         fifoCount -= packetSize;
 
-        #ifdef OUTPUT_READABLE_QUATERNION
-            // display quaternion values in easy matrix form: w x y z
-            mpu.dmpGetQuaternion(&q, fifoBuffer);
-            Serial.print("quat\t");
-            Serial.print(q.w);
-            Serial.print("\t");
-            Serial.print(q.x);
-            Serial.print("\t");
-            Serial.print(q.y);
-            Serial.print("\t");
-            Serial.print(q.z);
-            Serial.print("\t");
-            Serial.print(button_1_state);
-            Serial.print("\t");
-            Serial.print(button_2_state);
-            Serial.print("\t");
-            int flex0to100 = map(flexSensorReading, 320, 550, 0, 100);
-            Serial.println(flex0to100);
-        #endif
-
         #ifdef OUTPUT_READABLE_YAWPITCHROLL
             // display Euler angles in degrees
             mpu.dmpGetQuaternion(&q, fifoBuffer);
@@ -334,55 +305,11 @@ void loop() {
             Serial.print("\t");
             Serial.print(button_1_state);
             Serial.print("\t");
-            Serial.print(button_2_state);
-            Serial.print("\t");
             int flex0to100 = map(flexSensorReading, 320, 550, 0, 100);
             Serial.println(flex0to100);
         #endif
 
-        #ifdef OUTPUT_READABLE_EULER
-            // display Euler angles in degrees
-            mpu.dmpGetQuaternion(&q, fifoBuffer);
-            mpu.dmpGetEuler(euler, &q);
-            Serial.print("euler\t");
-            Serial.print(euler[0] * 180/M_PI);
-            Serial.print("\t");
-            Serial.print(euler[1] * 180/M_PI);
-            Serial.print("\t");
-            Serial.print(euler[2] * 180/M_PI);
-            Serial.print("\t");
-            Serial.print(button_1_state);
-            Serial.print("\t");
-            Serial.print(button_2_state);
-            Serial.print("\t");
-            int flex0to100 = map(flexSensorReading, 320, 550, 0, 100);
-            Serial.println(flex0to100);
-        #endif
-        
-        #ifdef OUTPUT_READABLE_WORLDACCEL
-            // display initial world-frame acceleration, adjusted to remove gravity
-            // and rotated based on known orientation from quaternion
-            mpu.dmpGetQuaternion(&q, fifoBuffer);
-            mpu.dmpGetAccel(&aa, fifoBuffer);
-            mpu.dmpGetGravity(&gravity, &q);
-            mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-            mpu.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
-            Serial.print("aworld\t");
-            Serial.print(aaWorld.x);
-            Serial.print("\t");
-            Serial.print(aaWorld.y);
-            Serial.print("\t");
-            Serial.print(aaWorld.z);
-            Serial.print("\t");
-            Serial.print(button_1_state);
-            Serial.print("\t");
-            Serial.print(button_2_state);
-            Serial.print("\t");
-            int flex0to100 = map(flexSensorReading, 320, 550, 0, 100);
-            Serial.println(flex0to100);
-        #endif
-        
-        delay(200);
+        //delay(200);
         // blink LED to indicate activity
         blinkState = !blinkState;
         digitalWrite(LED_PIN, blinkState);
