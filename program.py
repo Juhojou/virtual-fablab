@@ -19,7 +19,7 @@ class SerialLink(threading.Thread):
     _ser = None
     _open = None
     ctr_distance = 0
-    
+    distance = 15.0
     def __init__(self,name,q, qlock):
         threading.Thread.__init__(self)
         self.name = name
@@ -61,12 +61,12 @@ class SerialLink(threading.Thread):
                             if (zoom_button == "0" and float(flex_sensor) > 55):
                                 ctr_zoom += 1
                                 if (ctr_zoom % 2 == 1):
-                                    zoom(-1)
+                                    self.distance = zoom(-1)
                                     self.ctr_distance -= 1
                             elif (zoom_button == "0"):
                                 ctr_zoom += 1
                                 if (ctr_zoom % 2 == 1):
-                                    zoom(1)
+                                    self.distance = zoom(1)
                                     self.ctr_distance += 1
                             elif (sculpt_button == "0"):
                                 ctr_sculpt += 1
@@ -177,10 +177,19 @@ class ModalTimerOperator(bpy.types.Operator):
     def rotate_object(self):
         #try:
         obj = bpy.context.active_object
-        mat_rot_x = Matrix.Rotation(radians(1.0), 4, 'X') #rotation matrix along global X axis
-        mat_rot_y = Matrix.Rotation(radians(1.0), 4, 'Z') #rotation matrix along global Z axis
-        mat_rot_nx = Matrix.Rotation(radians(-1.0), 4, 'X')
-        mat_rot_ny = Matrix.Rotation(radians(-1.0), 4, 'Z')
+        if (p.distance < 5):
+            rot_angle = radians(p.distance) / 2
+        elif (p.distance > 15):
+            rot_angle = radians(15.0)
+        else:
+            rot_angle = radians(p.distance)
+#        if (area.spaces.active.region_3d.view_distance < 10):
+#            rot_angle = radians(5.0)
+#        
+        mat_rot_x = Matrix.Rotation(rot_angle, 4, 'X') #rotation matrix along global X axis
+        mat_rot_y = Matrix.Rotation(rot_angle, 4, 'Z') #rotation matrix along global Z axis
+        mat_rot_nx = Matrix.Rotation(-rot_angle, 4, 'X')
+        mat_rot_ny = Matrix.Rotation(-rot_angle, 4, 'Z')
         
         if not p.q.empty():
             p.qlock.acquire()
@@ -192,8 +201,9 @@ class ModalTimerOperator(bpy.types.Operator):
             defC = float(line[8]) 
             pi = 3.14159265358979
             p.qlock.release()
-            #obj.rotation_euler = (b , c , a)
-            
+            #obj.rotation_euler = (b , c , a)    
+
+
             """Determines the object rotation directions and if the sensor has moved enough to rotate the object"""
             if a > obj.rotation_euler.z + 30:
      #           rotation.append("+a")
@@ -322,12 +332,12 @@ def zoom(value):
         screen = window.screen
         for area in screen.areas: 
             if area.type == 'VIEW_3D':
-                for region in area.regions:
-                    if region.type == 'WINDOW':
-                        override = {'blend_data': bpy.context.blend_data,'mode': 'SCULPT','active_object': bpy.context.scene.objects.active,'scene': bpy.context.scene,'window': window, 'screen': screen, 'area': area, 'region': region}
-                        bpy.ops.view3d.zoom(override, delta=value, mx=0, my=0)
-                        #bpy.ops.object.mode_set(mode='SCULPT')
-                        break
+                if (area.spaces.active.region_3d.view_distance > 10):
+                    value = value*2
+                elif (area.spaces.active.region_3d.view_distance < 5):
+                    value = value / 10
+                area.spaces.active.region_3d.view_distance -= value
+                return area.spaces.active.region_3d.view_distance
 
 def rotate_camera():
     #bpy.ops.object.delete(use_global=False)
@@ -341,7 +351,7 @@ def rotate_camera():
             bpy.ops.object.mode_set(mode = 'EDIT')
             subdivide_object()
             bpy.ops.object.mode_set(mode='SCULPT')
-            bpy.ops.screen.screen_full_area(override, use_hide_panels=True)
+            bpy.ops.screen.screen_full_area(override, use_hide_panels=False)
             break
 
 def subdivide_object():
