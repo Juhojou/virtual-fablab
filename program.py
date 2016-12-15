@@ -307,13 +307,32 @@ class PanelControl(bpy.types.Panel):
     def draw(self, context):
         
         scene = context.scene
+        object = context.active_object
         
         layout = self.layout       
         row = layout.row()
-        row.label(text="Check this to launch program")
+        row.label(text="Status")
         
         row = layout.row() 
         row.prop(scene,"enable_prop", expand=True)
+        
+        
+        row= layout.row()
+        row.operator("mesh.subdivide") #"mesh.primitive_cube_add"
+        
+        row = layout.row()
+        row.operator("mesh.unsubdivide")
+        
+        row = layout.row()
+        bpy.context.active_object.update_from_editmode()
+        row.label(text="Number of vertices: %d" % len(object.data.vertices))
+        
+        col = layout.column()
+        col.label(text= "Mode")
+        col.prop(scene,"mode_prop", expand=True)
+        
+        
+        
 
 class PanelTimer(bpy.types.Operator):
     """This check if program is enabled in panel"""
@@ -322,22 +341,46 @@ class PanelTimer(bpy.types.Operator):
 
     _timer = None
     
-    @classmethod
-    def running(cls, context):
-        print("ASD")
-        return (cls._timer)
+    lastMode= None 
+    curMode = None 
+    
 
     def modal(self, context, event):
+        
+        modes =["OBJECT", "EDIT", "SCULPT", "TEXTURE_PAINT", "WEIGHT_PAINT", "VERTEX_PAINT"]
+           
         if event.type == 'TIMER':
+            # When program is enabled in panel and the other thread doesn't exist
+            # run the actual program
             if bpy.context.scene.enable_prop == '1' and len(threading.enumerate()) == 1:
-                print("RUN")
                 run()
-      
+            
+            # Updating current mode to panel changing mode if changed in panel
+            self.lastMode = self.curMode
+            self.curMode = bpy.context.active_object.mode 
+            m = modes.index(self.curMode)
+            if self.lastMode != self.curMode:
+                if str(m) != bpy.context.scene.mode_prop:
+                    bpy.context.scene.mode_prop = str(m)
+            else:
+                if  bpy.context.scene.mode_prop == '0':
+                    bpy.ops.object.mode_set(mode = 'OBJECT')
+                elif bpy.context.scene.mode_prop == '1':
+                    bpy.ops.object.mode_set(mode = 'EDIT') 
+                elif bpy.context.scene.mode_prop == '2':
+                    bpy.ops.object.mode_set(mode = 'SCULPT') 
+                elif  bpy.context.scene.mode_prop == '3':
+                    bpy.ops.object.mode_set(mode = 'TEXTURE_PAINT')
+                elif bpy.context.scene.mode_prop == '4':
+                    bpy.ops.object.mode_set(mode = 'WEIGHT_PAINT') 
+                elif bpy.context.scene.mode_prop == '5':
+                    bpy.ops.object.mode_set(mode = 'VERTEX_PAINT')      
+            
         return {'PASS_THROUGH'}
     
     def execute(self, context):
         wm = context.window_manager
-        self._timer = wm.event_timer_add(0.5, context.window)
+        self._timer = wm.event_timer_add(0.1, context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
@@ -385,27 +428,13 @@ def zoom(value):
                 return area.spaces.active.region_3d.view_distance
 
 def rotate_camera():
-    #bpy.ops.object.delete(use_global=False)
-    #bpy.ops.mesh.primitive_cube_add()
     for area in bpy.context.screen.areas:
         if area.type == 'VIEW_3D':
             override = bpy.context.copy()
             override['area'] = area
-            #bpy.ops.view3d.viewnumpad(override, type = 'FRONT')
-            #bpy.ops.view3d.view_orbit(type = 'ORBITUP')
-            bpy.ops.object.mode_set(mode = 'EDIT')
-            subdivide_object()
-            bpy.ops.object.mode_set(mode='SCULPT')
+        
             bpy.ops.screen.screen_full_area(override, use_hide_panels=False)
             break
-
-def subdivide_object():
-    while (True):
-        bpy.context.active_object.update_from_editmode()
-        if len(bpy.context.active_object.data.vertices) > 25000:
-            break
-        else:
-            bpy.ops.mesh.subdivide()
 
 """https://blenderartists.org/forum/showthread.php?340820-How-to-start-a-Modal-Timer-at-launch-in-an-addon
 was used as a guideline how to implement modal timer operator in a blender addon"""
@@ -432,7 +461,7 @@ def panel_handler(scene):
     bpy.app.handlers.scene_update_post.remove(panel_handler)
 
 def run():
-#    # This is executed when program is enabled in panel
+    # This is executed when program is enabled in panel
     global p
     qlock = threading.Lock()
     q = queue.Queue()
@@ -447,6 +476,7 @@ def run():
 
 def register():
     bpy.types.Scene.enable_prop = bpy.props.EnumProperty(items = (('0','Stop', ''),('1','Run','')))
+    bpy.types.Scene.mode_prop = bpy.props.EnumProperty(items = (('0','Object', ''),('1','Edit',''), ('2','Sculpt',''), ('3','Texture Paint', ''),('4','Weight Paint',''), ('5','Vertex Paint','')))
     bpy.utils.register_module(__name__)
     bpy.app.handlers.scene_update_post.append(panel_handler)
 
