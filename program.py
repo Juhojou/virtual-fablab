@@ -418,9 +418,10 @@ def set_cursor_position(x, y):
 
 # Left mouse button click - Windows
 def click():
-    if (bpy.context.scene.mode_prop == "2"):
+    if (bpy.context.scene.mode_prop == '1'):
         ctypes.windll.user32.mouse_event(0x8,0,0,0,0)
         ctypes.windll.user32.mouse_event(0x10,0,0,0,0)
+        print("right")
     else:
         ctypes.windll.user32.mouse_event(0x2, 0,0,0,0)    # MouseLeft clicked Down
         ctypes.windll.user32.mouse_event(0x4, 0,0,0,0)    # MouseLeft clicked Up
@@ -455,18 +456,9 @@ def rotate_camera():
             #bpy.ops.view3d.viewnumpad(override, type = 'FRONT')
             #bpy.ops.view3d.view_orbit(type = 'ORBITUP')
             bpy.ops.object.mode_set(mode = 'EDIT')
-            subdivide_object()
-            bpy.ops.object.mode_set(mode='SCULPT')
             bpy.ops.screen.screen_full_area(override, use_hide_panels=False)
             break
 
-def subdivide_object():
-    while (True):
-        bpy.context.active_object.update_from_editmode()
-        if len(bpy.context.active_object.data.vertices) > 25000:
-            break
-        else:
-            bpy.ops.mesh.subdivide()
 
 """https://blenderartists.org/forum/showthread.php?340820-How-to-start-a-Modal-Timer-at-launch-in-an-addon
 was used as a guideline how to implement modal timer operator in a blender addon"""
