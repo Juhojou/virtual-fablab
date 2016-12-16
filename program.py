@@ -248,7 +248,7 @@ class ModalTimerOperator(bpy.types.Operator):
                 obj.matrix_world = mat_loc * mat_rot_y * mat_rot * mat_scale
 
     def modal(self, context, event):
-        if event.type in {'RIGHTMOUSE', 'ESC'} or bpy.context.scene.enable_prop == '0':
+        if event.type in {'ESC'} or bpy.context.scene.enable_prop == '0':
             bpy.context.scene.enable_prop = '0'
             self.cancel(context)
             print("Exiting program")
@@ -418,8 +418,12 @@ def set_cursor_position(x, y):
 
 # Left mouse button click - Windows
 def click():
-    ctypes.windll.user32.mouse_event(0x2, 0,0,0,0)    # MouseLeft clicked Down
-    ctypes.windll.user32.mouse_event(0x4, 0,0,0,0)    # MouseLeft clicked Up
+    if (bpy.context.scene.mode_prop == "2"):
+        ctypes.windll.user32.mouse_event(0x8,0,0,0,0)
+        ctypes.windll.user32.mouse_event(0x10,0,0,0,0)
+    else:
+        ctypes.windll.user32.mouse_event(0x2, 0,0,0,0)    # MouseLeft clicked Down
+        ctypes.windll.user32.mouse_event(0x4, 0,0,0,0)    # MouseLeft clicked Up
     
 # Get coordinates for center of screen - Windows
 def get_screen_center():
