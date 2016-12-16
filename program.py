@@ -183,17 +183,14 @@ class ModalTimerOperator(bpy.types.Operator):
     _timer = None
     
     def rotate_object(self):
-        #try:
-        obj = bpy.context.active_object
+        obj = bpy.context.active_object #Active object which will be rotated
         if (p.distance < 5):
             rot_angle = radians(p.distance) / 2
         elif (p.distance > 15):
             rot_angle = radians(15.0)
         else:
             rot_angle = radians(p.distance)
-#        if (area.spaces.active.region_3d.view_distance < 10):
-#            rot_angle = radians(5.0)
-#        
+       
         mat_rot_x = Matrix.Rotation(rot_angle, 4, 'X') #rotation matrix along global X axis
         mat_rot_y = Matrix.Rotation(rot_angle, 4, 'Z') #rotation matrix along global Z axis
         mat_rot_nx = Matrix.Rotation(-rot_angle, 4, 'X')
@@ -209,45 +206,46 @@ class ModalTimerOperator(bpy.types.Operator):
             defC = float(line[8]) 
             pi = 3.14159265358979
             p.qlock.release()
-            #obj.rotation_euler = (b , c , a)    
-
+            
+            loc, rot, scale = obj.matrix_world.decompose()
+            mat_loc = Matrix.Translation(loc)
+            mat_rot = rot.to_matrix().to_4x4()
+            mat_scale = Matrix.Scale(scale[0],4,(1,0,0)) * Matrix.Scale(scale[1],4,(0,1,0)) * Matrix.Scale(scale[2],4,(0,0,1))
+              
+            rotation = mat_loc
 
             """Determines the object rotation directions and if the sensor has moved enough to rotate the object"""
-            if a > obj.rotation_euler.z + 30:
-     #           rotation.append("+a")
-                #obj.rotation_euler.z -= pi/16
-                pass
-                           
-            if a < obj.rotation_euler.z - 30:
-    #            rotation.append("-a")       
-                #obj.rotation_euler.z += pi/16
-                pass
+            if b > defB + 30: 
+                bpy.context.scene.update()
+                loc, rot, scale = obj.matrix_world.decompose()
+                mat_loc = Matrix.Translation(loc)
+                mat_rot = rot.to_matrix().to_4x4()
+                mat_scale = Matrix.Scale(scale[0],4,(1,0,0)) * Matrix.Scale(scale[1],4,(0,1,0)) * Matrix.Scale(scale[2],4,(0,0,1))
+                obj.matrix_world = mat_loc * mat_rot_x * mat_rot * mat_scale
+
+            if b < defB - 30:
+                bpy.context.scene.update()
+                loc, rot, scale = obj.matrix_world.decompose()
+                mat_loc = Matrix.Translation(loc)
+                mat_rot = rot.to_matrix().to_4x4()
+                mat_scale = Matrix.Scale(scale[0],4,(1,0,0)) * Matrix.Scale(scale[1],4,(0,1,0)) * Matrix.Scale(scale[2],4,(0,0,1))
+                obj.matrix_world = mat_loc * mat_rot_nx * mat_rot * mat_scale
                     
-            if c > defC + 50: # c < obj.rotation_euler.y + 30
-                #rotation.append("+b") 
-                #obj.rotation_euler.y += pi/16
-                obj.matrix_world *= mat_rot_y
-                #pass     
-            if c < defC - 50: # c > obj.rotation_euler.y
-                #rotation.append("-b")
-                #obj.rotation_euler.y -= pi/16
-                obj.matrix_world *= mat_rot_ny
-                #pass
-                    
-            if b > defB + 50: # b > obj.rotation_euler.x
-                #rotation.append("+c") 
-                #obj.rotation_euler.x += pi/16
-                obj.matrix_world *= mat_rot_x    
-                #pass
-            if b < defB - 50: # b > obj.rotation_euler.x
-                #rotation.append("-c")
-                #obj.rotation_euler.x -= pi/16
-                obj.matrix_world *= mat_rot_nx
-                #pass
-            
-            #time.sleep(0.1)
-        #bpy.ops.transform.rotate(value=0.283/8, axis=(0,0,1))
-        #except KeyboardInterrupt:
+            if c > defC + 70:
+                bpy.context.scene.update()
+                loc, rot, scale = obj.matrix_world.decompose()
+                mat_loc = Matrix.Translation(loc)
+                mat_rot = rot.to_matrix().to_4x4()
+                mat_scale = Matrix.Scale(scale[0],4,(1,0,0)) * Matrix.Scale(scale[1],4,(0,1,0)) * Matrix.Scale(scale[2],4,(0,0,1))
+                obj.matrix_world = mat_loc * mat_rot_ny * mat_rot * mat_scale
+    
+            if c < defC - 70:
+                bpy.context.scene.update()
+                loc, rot, scale = obj.matrix_world.decompose()
+                mat_loc = Matrix.Translation(loc)
+                mat_rot = rot.to_matrix().to_4x4()
+                mat_scale = Matrix.Scale(scale[0],4,(1,0,0)) * Matrix.Scale(scale[1],4,(0,1,0)) * Matrix.Scale(scale[2],4,(0,0,1))
+                obj.matrix_world = mat_loc * mat_rot_y * mat_rot * mat_scale
 
     def modal(self, context, event):
         if event.type in {'RIGHTMOUSE', 'ESC'} or bpy.context.scene.enable_prop == '0':
@@ -270,6 +268,8 @@ class ModalTimerOperator(bpy.types.Operator):
             for area in bpy.context.screen.areas:
                 if area.type == 'VIEW_3D':
                     area.tag_redraw()
+                    
+            bpy.ops.screen.back_to_previous()
             
             # DISABLE FULLSCREEN HERE
             
@@ -316,12 +316,18 @@ class PanelControl(bpy.types.Panel):
         row = layout.row() 
         row.prop(scene,"enable_prop", expand=True)
         
-        
-        row= layout.row()
-        row.operator("mesh.subdivide") #"mesh.primitive_cube_add"
-        
+       
+        col = layout.column()
         row = layout.row()
-        row.operator("mesh.unsubdivide")
+        split = row.split(align=True)
+        split.operator("mesh.subdivide")
+        split.operator("mesh.unsubdivide", text="Unsubsivide")
+        
+#        row= layout.row()
+#        row.operator("mesh.subdivide") #"mesh.primitive_cube_add"
+#        
+#        row = layout.row()
+#        row.operator("mesh.unsubdivide")
         
         row = layout.row()
         bpy.context.active_object.update_from_editmode()
@@ -331,7 +337,10 @@ class PanelControl(bpy.types.Panel):
         col.label(text= "Mode")
         col.prop(scene,"mode_prop", expand=True)
         
-        
+        row = layout.row()
+        row = layout.row()
+        row = layout.row()
+        row.operator("object.location_clear", text="Move object to center")
         
 
 class PanelTimer(bpy.types.Operator):
@@ -375,6 +384,11 @@ class PanelTimer(bpy.types.Operator):
                     bpy.ops.object.mode_set(mode = 'WEIGHT_PAINT') 
                 elif bpy.context.scene.mode_prop == '5':
                     bpy.ops.object.mode_set(mode = 'VERTEX_PAINT')      
+
+                for area in bpy.context.screen.areas:
+                    if area.type == 'VIEW_3D':
+                        area.tag_redraw()
+                    
             
         return {'PASS_THROUGH'}
     
@@ -387,7 +401,7 @@ class PanelTimer(bpy.types.Operator):
     def cancel(self, context):
         wm = context.window_manager
         wm.event_timer_remove(self._timer)
-
+        
 # Definition of point structure - Windows
 class POINT(Structure):
     _fields_ = [("x", c_ulong), ("y", c_ulong)]
@@ -428,13 +442,27 @@ def zoom(value):
                 return area.spaces.active.region_3d.view_distance
 
 def rotate_camera():
+    #bpy.ops.object.delete(use_global=False)
+    #bpy.ops.mesh.primitive_cube_add()
     for area in bpy.context.screen.areas:
         if area.type == 'VIEW_3D':
             override = bpy.context.copy()
             override['area'] = area
-        
+            #bpy.ops.view3d.viewnumpad(override, type = 'FRONT')
+            #bpy.ops.view3d.view_orbit(type = 'ORBITUP')
+            bpy.ops.object.mode_set(mode = 'EDIT')
+            subdivide_object()
+            bpy.ops.object.mode_set(mode='SCULPT')
             bpy.ops.screen.screen_full_area(override, use_hide_panels=False)
             break
+
+def subdivide_object():
+    while (True):
+        bpy.context.active_object.update_from_editmode()
+        if len(bpy.context.active_object.data.vertices) > 25000:
+            break
+        else:
+            bpy.ops.mesh.subdivide()
 
 """https://blenderartists.org/forum/showthread.php?340820-How-to-start-a-Modal-Timer-at-launch-in-an-addon
 was used as a guideline how to implement modal timer operator in a blender addon"""
@@ -461,7 +489,7 @@ def panel_handler(scene):
     bpy.app.handlers.scene_update_post.remove(panel_handler)
 
 def run():
-    # This is executed when program is enabled in panel
+#    # This is executed when program is enabled in panel
     global p
     qlock = threading.Lock()
     q = queue.Queue()
@@ -483,6 +511,7 @@ def register():
 def unregister():
     bpy.utils.unregister_module(__name__)
     del bpy.types.Scene.enable_prop
+    del bpy.types.Scene.mode_prop
 
 
 if __name__ == "__main__":
