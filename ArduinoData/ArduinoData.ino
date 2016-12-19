@@ -382,7 +382,7 @@ void loop() {
             Serial.println(flex0to100);
         #endif
         
-        delay(200);
+        delay(50);
         // blink LED to indicate activity
         blinkState = !blinkState;
         digitalWrite(LED_PIN, blinkState);
