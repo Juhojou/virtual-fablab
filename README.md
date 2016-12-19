@@ -5,7 +5,7 @@ User can control and edit a 3D-object with e.g. power glove in 3D-computer graph
 We build a Power Glove which uses Arduino Uno, MPU6050 accelerometer, two bending resistor and two buttons.
 
 # How to use this project:
-1. Install Arduino IDE
+1. ´Install Arduino IDE´
 
   https://www.arduino.cc/en/Main/Software
 
