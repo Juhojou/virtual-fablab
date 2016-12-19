@@ -18,8 +18,8 @@ class SerialLink(threading.Thread):
     # Thread for reading the usb port and adding to the queue 
     _ser = None
     _open = None
-    ctr_distance = 0
-    distance = 15.0
+#    ctr_distance = 0
+#    distance = 15.0
     def __init__(self,name,q, qlock):
         threading.Thread.__init__(self)
         self.name = name
@@ -57,26 +57,7 @@ class SerialLink(threading.Thread):
                             a = float(line[1])
                             b = float(line[2])
                             c = float(line[3])
-                            zoom_button = line[4]
-                            sculpt_button = line[5]
-                            flex_sensor = line[6]
-                            if (zoom_button == "0" and float(flex_sensor) > 55):
-                                ctr_zoom += 1
-                                if (ctr_zoom % 2 == 1):
-                                    self.distance = zoom(-1)
-                                    self.ctr_distance -= 1
-                            elif (zoom_button == "0"):
-                                ctr_zoom += 1
-                                if (ctr_zoom % 2 == 1):
-                                    self.distance = zoom(1)
-                                    self.ctr_distance += 1
-                            elif (sculpt_button == "0"):
-                                ctr_sculpt += 1
-                                if (ctr_sculpt % 2 == 1):
-                                    click()                              
-                            else:
-                                ctr_zoom = 0
-                                ctr_sculpt = 0
+                            
                             if ctr < 5:
                                 if (c == tempC and b == tempB):
                                     ctr += 1
@@ -181,15 +162,17 @@ class ModalTimerOperator(bpy.types.Operator):
     bl_idname = "wm.modal_timer_operator"
     bl_label = "Modal Timer Operator"
     _timer = None
+    _ctr_zoom = 0
+    _ctr_sculpt = 0
     
     def rotate_object(self):
         obj = bpy.context.active_object #Active object which will be rotated
-        if (p.distance < 5):
-            rot_angle = radians(p.distance) / 2
-        elif (p.distance > 15):
+        if (getDistance() < 5):
+            rot_angle = radians(getDistance()) / 2
+        elif (getDistance() > 15):
             rot_angle = radians(15.0)
         else:
-            rot_angle = radians(p.distance)
+            rot_angle = radians(getDistance())
        
         mat_rot_x = Matrix.Rotation(rot_angle, 4, 'X') #rotation matrix along global X axis
         mat_rot_y = Matrix.Rotation(rot_angle, 4, 'Z') #rotation matrix along global Z axis
@@ -202,9 +185,34 @@ class ModalTimerOperator(bpy.types.Operator):
             a = float(line[1])
             b = float(line[2])
             c = float(line[3])
+            zoom_button = line[4]
+            sculpt_button = line[5]
+            flex_sensor = line[6]
             defB = float(line[7])
             defC = float(line[8]) 
             pi = 3.14159265358979
+            
+            if (zoom_button == "0" and float(flex_sensor) > 55):
+                #checks if the zoom and scultp buttons are pressed
+                self._ctr_zoom += 1
+                if (self._ctr_zoom % 2 == 1): # waits that 2 sequential cycles where zoom button is pressed occurs
+                    zoom(-1)
+                    #self.distance = zoom(-1)
+                    #self.ctr_distance -= 1
+            elif (zoom_button == "0"):
+                self._ctr_zoom += 1
+                if (self._ctr_zoom % 2 == 1):
+                    zoom(1)
+                        #self.distance = zoom(1)
+                        #self.ctr_distance += 1
+            elif (sculpt_button == "0"):
+                self._ctr_sculpt += 1
+                if (self._ctr_sculpt % 2 == 1):
+                    click()                              
+            else:
+                self._ctr_zoom = 0
+                self._ctr_sculpt = 0
+            
             p.qlock.release()
             
             loc, rot, scale = obj.matrix_world.decompose()
@@ -444,6 +452,14 @@ def zoom(value):
                 elif (area.spaces.active.region_3d.view_distance < 5):
                     value = value / 10
                 area.spaces.active.region_3d.view_distance -= value
+                #return area.spaces.active.region_3d.view_distance
+
+def getDistance():
+    # gets the user perspctive distance to the object
+    for window in bpy.context.window_manager.windows:
+        screen = window.screen
+        for area in screen.areas: 
+            if area.type == 'VIEW_3D':
                 return area.spaces.active.region_3d.view_distance
 
 def rotate_camera():
@@ -492,7 +508,7 @@ def run():
     p = SerialLink('serial thread',q, qlock) #Create the thread
     p.start()
     bpy.app.handlers.scene_update_post.append(my_handler)
-    print("Thread made and establishing connecion with Arduino device")
+    print("Thread made and establishing connection with Arduino device")
     rotate_camera()
     if sys.platform.startswith('win'):
         width, height = get_screen_center()
