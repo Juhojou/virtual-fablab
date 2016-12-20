@@ -13,13 +13,12 @@ from bpy.app.handlers import persistent
 from bpy.props import EnumProperty
 from math import radians
 from mathutils import Matrix
+from bpy.props import *
 
 class SerialLink(threading.Thread):
     # Thread for reading the usb port and adding to the queue 
     _ser = None
     _open = None
-#    ctr_distance = 0
-#    distance = 15.0
     def __init__(self,name,q, qlock):
         threading.Thread.__init__(self)
         self.name = name
@@ -32,8 +31,6 @@ class SerialLink(threading.Thread):
             ctr = 0
             tempB = 0
             tempC = 0
-            ctr_zoom = 0
-            ctr_sculpt = 0
             defA, defB, defC = None, None, None
             s = threading.currentThread()
             connection = self.open_connection()
@@ -69,6 +66,7 @@ class SerialLink(threading.Thread):
                                 if ctr == 3:
                                     defA, defB, defC = float(a), float(b), float(c)
                                     ctr = 6
+                                    bpy.context.scene.status_prop = "Running"
                                     print("YAW alustettu")
                             
                             if defA:
@@ -93,12 +91,15 @@ class SerialLink(threading.Thread):
         ports = []
         port = None
         ctr = 0
+        bpy.context.scene.status_prop = "Searching COM port"
         while port == None:
             if bpy.context.scene.enable_prop == '0':
+                bpy.context.scene.status_prop = "Stopped"
                 return False
             ctr += 1
             if (ctr > 4):
                 print("Couldn't find Arduino in reasonable time exiting program")
+                bpy.context.scene.status_prop = "Could not find Arduino. Program stopped."
                 return False
             time.sleep(5)
             print("Checking for Arduino connected to a usb port")
@@ -116,8 +117,10 @@ class SerialLink(threading.Thread):
                         port = b[0]
         closed = False
         ctr = 0
+        bpy.context.scene.status_prop = "Opening serial connection"
         while not closed:
             if bpy.context.scene.enable_prop == '0':
+                bpy.context.scene.status_prop = "Stopped"
                 return False
             try:
                 self._ser = serial.Serial(port,115200, write_timeout=5) # opens the serial connection
@@ -126,18 +129,22 @@ class SerialLink(threading.Thread):
                 print("Problem opening connection retrying in 5 seconds")
                 ctr += 1
                 if (ctr > 4):
+                    bpy.context.scene.status_prop = "Could not open connection. Program stopped."
                     print("Couldn't find open serial port in reasonable time exiting program")
                     return False
                 time.sleep(5)
         write = False
         ctr = 0
+        bpy.context.scene.status_prop = "Sending first character"
         while not write: # Tries to write to the arduino so that the Arduino knows to start sending data
             if bpy.context.scene.enable_prop == '0':
+                bpy.context.scene.status_prop = "Stopped"
                 return False
             try:
                 self._ser.write(str.encode('A')) # The Arduino waits for a character to start sending data
                 print("Sent character to Arduino")
                 print("Calibrating...")
+                bpy.context.scene.status_prop = "Calibrating"
                 time.sleep(10) # Waits for 10 seconds so that the accelerometer values normalise
                 print("Calibrating finished!")
                 write =  True
@@ -145,6 +152,7 @@ class SerialLink(threading.Thread):
                 print("Couldn't write to the serial port\nRetrying in 5 seconds")
                 ctr += 1
                 if (ctr > 4):
+                    bpy.context.scene.status_prop = "Could not write a character. Program stopped."
                     print("Couldn't find write to the serial port in reasonable time exiting program")
                     return False
         return True
@@ -167,10 +175,10 @@ class ModalTimerOperator(bpy.types.Operator):
     
     def rotate_object(self):
         obj = bpy.context.active_object #Active object which will be rotated
-        if (getDistance() < 5):
+        if (getDistance() < 4):
             rot_angle = radians(getDistance()) / 2
-        elif (getDistance() > 15):
-            rot_angle = radians(15.0)
+        elif (getDistance() > 8):
+            rot_angle = radians(8.0)
         else:
             rot_angle = radians(getDistance())
        
@@ -197,14 +205,10 @@ class ModalTimerOperator(bpy.types.Operator):
                 self._ctr_zoom += 1
                 if (self._ctr_zoom % 2 == 1): # waits that 2 sequential cycles where zoom button is pressed occurs
                     zoom(-1)
-                    #self.distance = zoom(-1)
-                    #self.ctr_distance -= 1
             elif (zoom_button == "0"):
                 self._ctr_zoom += 1
                 if (self._ctr_zoom % 2 == 1):
                     zoom(1)
-                        #self.distance = zoom(1)
-                        #self.ctr_distance += 1
             elif (sculpt_button == "0"):
                 self._ctr_sculpt += 1
                 if (self._ctr_sculpt % 2 == 1):
@@ -257,6 +261,8 @@ class ModalTimerOperator(bpy.types.Operator):
 
     def modal(self, context, event):
         if event.type in {'ESC'} or bpy.context.scene.enable_prop == '0':
+            if bpy.context.scene.enable_prop == '0' and bpy.context.scene.status_prop == 'Running':
+                bpy.context.scene.status_prop = 'Stopped'
             bpy.context.scene.enable_prop = '0'
             self.cancel(context)
             print("Exiting program")
@@ -277,9 +283,12 @@ class ModalTimerOperator(bpy.types.Operator):
                 if area.type == 'VIEW_3D':
                     area.tag_redraw()
                     
-            bpy.ops.screen.back_to_previous()
+            # DISABLE FULLSCREEN HERE            
+            try:        
+                bpy.ops.screen.back_to_previous()
+            except RuntimeError:
+                pass
             
-            # DISABLE FULLSCREEN HERE
             
             return {'FINISHED'}
 
@@ -316,31 +325,35 @@ class PanelControl(bpy.types.Panel):
         
         scene = context.scene
         object = context.active_object
-        
-        layout = self.layout       
+        layout = self.layout
+
         row = layout.row()
         row.label(text="Status")
         
+        row = layout.row()
+        status= bpy.context.scene.status_prop 
+        row.label(text=status) 
+
         row = layout.row() 
         row.prop(scene,"enable_prop", expand=True)
-        
+
+        row = layout.row()
+        row = layout.row()
+        row = layout.row()        
        
         col = layout.column()
         row = layout.row()
         split = row.split(align=True)
         split.operator("mesh.subdivide")
-        split.operator("mesh.unsubdivide", text="Unsubsivide")
-        
-#        row= layout.row()
-#        row.operator("mesh.subdivide") #"mesh.primitive_cube_add"
-#        
-#        row = layout.row()
-#        row.operator("mesh.unsubdivide")
+        split.operator("mesh.unsubdivide", text="Unsubdivide")
         
         row = layout.row()
         bpy.context.active_object.update_from_editmode()
         row.label(text="Number of vertices: %d" % len(object.data.vertices))
         
+        row = layout.row()
+        row = layout.row()
+
         col = layout.column()
         col.label(text= "Mode")
         col.prop(scene,"mode_prop", expand=True)
@@ -350,6 +363,8 @@ class PanelControl(bpy.types.Panel):
         row = layout.row()
         row.operator("object.location_clear", text="Move object to center")
         
+        row = layout.row()
+        row.operator("object.rotateview", text="Rotate view")
 
 class PanelTimer(bpy.types.Operator):
     """This check if program is enabled in panel"""
@@ -409,7 +424,24 @@ class PanelTimer(bpy.types.Operator):
     def cancel(self, context):
         wm = context.window_manager
         wm.event_timer_remove(self._timer)
-        
+
+class rotateView(bpy.types.Operator):
+    bl_idname = "object.rotateview"
+    bl_label = "Camera Rotation"
+
+    def execute(self, context):
+        for window in bpy.context.window_manager.windows:
+            screen = window.screen
+            for area in screen.areas: 
+                if area.type == 'VIEW_3D':
+                    for region in area.regions:
+                        if region.type == 'WINDOW':
+                            override = {'blend_data': bpy.context.blend_data,'mode': 'SCULPT','active_object': bpy.context.scene.objects.active,'scene': bpy.context.scene,'window': window, 'screen': screen, 'area': area, 'region': region}
+                            bpy.ops.view3d.viewnumpad(override, type = 'FRONT')
+                            break
+        return {'FINISHED'}
+
+    
 # Definition of point structure - Windows
 class POINT(Structure):
     _fields_ = [("x", c_ulong), ("y", c_ulong)]
@@ -462,18 +494,15 @@ def getDistance():
             if area.type == 'VIEW_3D':
                 return area.spaces.active.region_3d.view_distance
 
-def rotate_camera():
-    #bpy.ops.object.delete(use_global=False)
-    #bpy.ops.mesh.primitive_cube_add()
+def setFullscreen():
     for area in bpy.context.screen.areas:
         if area.type == 'VIEW_3D':
             override = bpy.context.copy()
             override['area'] = area
-            #bpy.ops.view3d.viewnumpad(override, type = 'FRONT')
-            #bpy.ops.view3d.view_orbit(type = 'ORBITUP')
             bpy.ops.object.mode_set(mode = 'EDIT')
             bpy.ops.screen.screen_full_area(override, use_hide_panels=False)
             break
+
 
 
 """https://blenderartists.org/forum/showthread.php?340820-How-to-start-a-Modal-Timer-at-launch-in-an-addon
@@ -509,14 +538,15 @@ def run():
     p.start()
     bpy.app.handlers.scene_update_post.append(my_handler)
     print("Thread made and establishing connection with Arduino device")
-    rotate_camera()
+    setFullscreen()
     if sys.platform.startswith('win'):
         width, height = get_screen_center()
         set_cursor_position(width, height)
 
 def register():
     bpy.types.Scene.enable_prop = bpy.props.EnumProperty(items = (('0','Stop', ''),('1','Run','')))
-    bpy.types.Scene.mode_prop = bpy.props.EnumProperty(items = (('0','Object', ''),('1','Edit',''), ('2','Sculpt',''), ('3','Texture Paint', ''),('4','Weight Paint',''), ('5','Vertex Paint','')))
+    bpy.types.Scene.mode_prop = bpy.props.EnumProperty(items = (('0','Object','Object mode', 'OBJECT_DATAMODE', 0),('1','Edit','Edit mode', 'EDITMODE_HLT', 1), ('2','Sculpt','Sculpt mode', 'SCULPTMODE_HLT', 2), ('3','Texture Paint', 'Texture paint mode', 'TPAINT_HLT', 3),('4','Weight Paint','Weight paint mode', 'WPAINT_HLT',4), ('5','Vertex Paint','Vertex paint mode', 'VPAINT_HLT' ,5)))
+    bpy.types.Scene.status_prop = bpy.props.StringProperty(default="Stopped")
     bpy.utils.register_module(__name__)
     bpy.app.handlers.scene_update_post.append(panel_handler)
 
@@ -524,6 +554,7 @@ def unregister():
     bpy.utils.unregister_module(__name__)
     del bpy.types.Scene.enable_prop
     del bpy.types.Scene.mode_prop
+    del bpy.types.Scene.status_prop
 
 
 if __name__ == "__main__":
