@@ -23,14 +23,15 @@ We build a Power Glove which uses Arduino Uno, MPU6050 accelerometer, two bendin
 
 5. `Installing the add-on`
 
-Download the file `VirtualizationTool.py` and save it to your computer.
+  Download the file `VirtualizationTool.py` and save it to your computer.
+ 
+  In Blender in `User Preferences` -view, click `Add-ons` and click `Install from File` button at the bottom.
+  Now navigate and choose file you downloaded and click `Install from File`.
 
-In Blender in `User Preferences` -view, click `Add-ons` and click `Install from File` button at the bottom.
-Now navigate and choose file you downloaded and click `Install from File`.
+  Now you should see the program listed as add-on in `Object` category with name `control object`.
+  Next enable add-on by checking its checkbox. Now `VirtualizationTool` panel should appear on very left of your 3D-view window.
 
-Now you should see the program listed as add-on in `Object` category with name `control object`.
-Next enable add-on by checking its checkbox. Now `VirtualizationTool` panel should appear on very left of your 3D-view window.
-
-If you want to panel to start automatically on launch click `Save User Settings` button in `User Preferences` after checking the add-on checkbox. This will load the add-on always on Blender launch.
+  If you want to panel to start automatically on launch click `Save User Settings` button in `User Preferences` after
+  checking the add-on checkbox. This will load the add-on always on Blender launch.
 
 6. `Use the system and please feel free to edit the code!`
