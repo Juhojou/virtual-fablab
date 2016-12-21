@@ -4,6 +4,8 @@ User can control and edit a 3D-object with e.g. power glove in 3D-computer graph
 
 We build a Power Glove which uses Arduino Uno, MPU6050 accelerometer, two bending resistor and two buttons.
 
+This software is tested on Blender versions 2.76-2.78 on Windows 7 and 10. The software partial Linux support with limited functionality, tested on Ubuntu 14.04.  
+
 # How to use this project:
 1. `Install Arduino IDE`
 
