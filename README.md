@@ -13,7 +13,7 @@ This software is tested on Blender versions 2.76-2.78 on Windows 7 and 10. The s
 
 2. `Download libraries for Arduino`
 
-  Firstly, you have to download (and “install”) two libraries: I2Cdevlib and MPU6050. The former solves issues related to the communication   while the latter includes some useful functions to configure and operate the sensor. Both libraries can be downloaded from                 https://github.com/jrowberg/i2cdevlib. The installation process is as easy as copying both folders within the Arduino IDE installation     path (typically c:/Program Files (x86)/Arduino/libraries).
+  Firstly, you have to download (and “install”) two libraries: `I2Cdevlib` and `MPU6050`. The former solves issues related to the communication   while the latter includes some useful functions to configure and operate the sensor. Both libraries can be downloaded from                 `https://github.com/jrowberg/i2cdevlib`. The installation process is as easy as copying both folders within the Arduino IDE installation     path (typically `C:/Program Files (x86)/Arduino/libraries`).
 
 3. `Download and install Blender`
 
