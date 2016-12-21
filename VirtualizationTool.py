@@ -1,3 +1,6 @@
+#
+# (C) Juho Kananen, Juuso Sipola, Krista Vilppola, Juhani Wilén
+#
 bl_info = {"name": "control object","category": "User"}
 
 import bpy
@@ -26,7 +29,7 @@ class SerialLink(threading.Thread):
         self.qlock = qlock
         
     def add_buffer(self):
-        '''This method listens for Arduino data and saves it to queue '''
+        '''This function listens for Arduino data and saves it to queue '''
         try:
             # These variables are used for initializing the accelometer
             ctr = 0
@@ -191,12 +194,12 @@ class ModalTimerOperator(bpy.types.Operator):
     def rotate_object(self):
         # Active object which will be rotated
         obj = bpy.context.active_object 
-        if (getDistance() < 4):
-            rot_angle = radians(getDistance()) / 2
-        elif (getDistance() > 8):
+        if (get_distance() < 4):
+            rot_angle = radians(get_distance()) / 2
+        elif (get_distance() > 8):
             rot_angle = radians(8.0)
         else:
-            rot_angle = radians(getDistance())
+            rot_angle = radians(get_distance())
        
         # rotation matrix along global X axis
         mat_rot_x = Matrix.Rotation(rot_angle, 4, 'X') 
@@ -337,8 +340,8 @@ class ModalTimerOperator(bpy.types.Operator):
     
 class PanelControl(bpy.types.Panel):
     """Creates a Panel in the 3D-View tools window"""
-    bl_category = "EditObject"  # Name seen in tab
-    bl_label = "EditObject" # Caption of the opened panel
+    bl_category = "VirtualizationTool"  # Name seen in tab
+    bl_label = "VirtualizationTool" # Caption of the opened panel
     bl_idname = "controlpanel"  # Unique object name
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
@@ -348,7 +351,7 @@ class PanelControl(bpy.types.Panel):
         return context.active_object is not None
        
     def draw(self, context):
-        # This method draws everything that is seen in the panel
+        # This function draws everything that is seen in the panel
         
         scene = context.scene
         object = context.active_object
@@ -512,7 +515,7 @@ def zoom(value):
                     value = value / 10
                 area.spaces.active.region_3d.view_distance -= value
                 
-def getDistance():
+def get_distance():
     # Gets the user perspctive distance to the object
     for window in bpy.context.window_manager.windows:
         screen = window.screen
@@ -520,7 +523,7 @@ def getDistance():
             if area.type == 'VIEW_3D':
                 return area.spaces.active.region_3d.view_distance
 
-def setFullscreen():
+def set_fullscreen():
     for area in bpy.context.screen.areas:
         if area.type == 'VIEW_3D':
             override = bpy.context.copy()
@@ -574,7 +577,7 @@ def run():
     bpy.app.handlers.scene_update_post.append(my_handler)
     print("Thread made and establishing connection with Arduino device")
     bpy.context.scene.status_prop = "Connecting to Arduino"
-    setFullscreen()
+    set_fullscreen()
 
 def register():
     # This property is used to lauch program in panel
