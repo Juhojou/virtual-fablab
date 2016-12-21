@@ -25,8 +25,7 @@ We build a Power Glove which uses Arduino Uno, MPU6050 accelerometer, two bendin
   Copy folder `serial` to your `Blender Foundation\Blender\YourBlenderVersion\scripts\modules` folder.
 
   This is usually located in `Program Files` in 64-bit systems and `Program Files (x86)` in 32-bit system.
-
-  Example path where to copy the folder: `C:\Program Files\Blender Foundation\Blender\2.78\scripts\modules`
+  Example path where to copy the folder: `C:\Program Files\Blender Foundation\Blender\2.78\scripts\modules`.
 
   You can test pySerial working properly by typing `import serial` in Blender's python console. If you don't 
   see any error  messages is pySerial installed properly.
