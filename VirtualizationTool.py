@@ -1,7 +1,7 @@
 #
 # (C) Juho Kananen, Juuso Sipola, Krista Vilppola, Juhani Wilén
 #
-bl_info = {"name": "control object","category": "User"}
+bl_info = {"name": "control object","category": "Object"}
 
 import bpy
 import serial
@@ -81,6 +81,7 @@ class SerialLink(threading.Thread):
                                     bpy.context.scene.status_prop = "Running"
                             
                             # Adds values to queue if accelometer data has changed enough from default values
+							# These values can be adjusted for better rotation
                             if defA:
                                 if a > defA + 30 or a < defA - 30 or b > defB + 30 or b < defB - 30 or c > defC + 30 or c < defC - 30:
                                     line.append(defB)
@@ -193,10 +194,11 @@ class ModalTimerOperator(bpy.types.Operator):
     
     def rotate_object(self):
         # Active object which will be rotated
-        obj = bpy.context.active_object 
-        if (get_distance() < 4):
+		# Rotation speed can be adjusted by modifying rot_angle
+        obj = bpy.context.active_object
+        if (get_distance() < 4): # minimum rotation speed determined by the distance
             rot_angle = radians(get_distance()) / 2
-        elif (get_distance() > 8):
+        elif (get_distance() > 8): # maximum rotation speed determined by the distance
             rot_angle = radians(8.0)
         else:
             rot_angle = radians(get_distance())
@@ -251,6 +253,7 @@ class ModalTimerOperator(bpy.types.Operator):
             rotation = mat_loc
 
             # Determines the object rotation directions and if the sensor has moved enough to rotate the object
+			# These values can be adjusted for better rotation
             if b > defB + 30: 
                 bpy.context.scene.update()
                 loc, rot, scale = obj.matrix_world.decompose()
