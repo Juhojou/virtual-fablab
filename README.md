@@ -26,7 +26,7 @@ This software is tested on Blender versions 2.76-2.78 on Windows 7 and 10. The s
   Download the pySerial from link above as zip-file. Extract the zip-file and open the extracted folder.
   Copy folder `serial` to your `Blender Foundation\Blender\YourBlenderVersion\scripts\modules` folder.
 
-  This is usually located in `Program Files` in 64-bit systems and `Program Files (x86)` in 32-bit system.
+  This is usually located in `Program Files` in 64-bit systems and `Program Files (x86)` in 32-bit systems.
   Example path where to copy the folder: `C:\Program Files\Blender Foundation\Blender\2.78\scripts\modules`.
 
   You can test pySerial working properly by typing `import serial` in Blender's python console. If you don't 
